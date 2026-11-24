@@ -41,10 +41,11 @@ Fitbit or Google Health cloud sync, charts, an iPhone app, delivering the partne
 | D-8 | One screen (Readings list) and no charts | Health Connect and Fitbit already chart weight. |
 | D-9 | Platform SQLite and plain Views, no Room or Compose | Smallest dependency set for a two-table app. Revisit if the UI grows. |
 | D-10 | Owner first; the second person is the next milestone, sent to Apple Health | The owner can use it now. The assignment code already handles two people, so adding the second person is a new person row plus an Apple Health export. Guests and far-off readings are held back from Health Connect. |
+| D-11 | Second person → Apple Health milestone deferred (2026-11-25) | Owner: "It's not great." Every option was weak. A share button plus an iPhone Shortcut is manual on both phones. A shared Drive file read by a Shortcut is fragile. An own iPhone app needs a $99/yr account (or a reinstall every 7 days), and iOS can't scan for this scale in the background. Second-person readings are still captured and stored as unassigned. |
 
 ## Backlog
 
-1. Deliver the partner's readings to their Apple Health (likely an iPhone Shortcut reading an export).
-2. Body fat, if impedance turns up (Known gap 1).
+1. Deliver the partner's readings to their Apple Health. Deferred (D-11): revisit if a less manual route appears.
+2. ~~Body fat~~: dropped. The scale broadcasts weight only (SPEC Known gap 1, 2026-11-25).
 3. Trend chart.
 4. Later fitness apps reading the Blob-log database or Health Connect.

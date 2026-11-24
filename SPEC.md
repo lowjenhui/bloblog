@@ -10,7 +10,7 @@ A sideloaded Android app (Kotlin) on the owner's phone. It catches weigh-ins fro
 
 People: the phone owner (`isMe`) is set up first. The second person comes in the next milestone, and their readings go to Apple Health, not Health Connect.
 
-Done in v0.2: rules 2–7 for one person, setup for the owner only (screen 1, interim form), permissions (screen 3), readings with names and reassignment (screen 4), and the notification (screen 5). Not done yet: scale pairing (screen 2). Next milestone: the second person, sent to Apple Health. Until pairing is built, the scan filter accepts any `AA BB` scale, and each reading stores its scale ID. Readings captured by v0.1 start unassigned after the upgrade. Checked on the owner's phone on 2026-11-24: setup, permissions, reassigning a v0.1 reading, and a background weigh-in written to Health Connect with the app closed.
+Done in v0.2: rules 2–7 for one person, setup for the owner only (screen 1, interim form), permissions (screen 3), readings with names and reassignment (screen 4), and the notification (screen 5). Not done yet: scale pairing (screen 2). Second person to Apple Health is deferred (PRD D-11). Until pairing is built, the scan filter accepts any `AA BB` scale, and each reading stores its scale ID. Readings captured by v0.1 start unassigned after the upgrade. Checked on the owner's phone on 2026-11-24: setup, permissions, reassigning a v0.1 reading, and a background weigh-in written to Health Connect with the app closed.
 
 ## Scale protocol (observed 2026-11-22)
 
@@ -20,12 +20,14 @@ The scale is broadcast-only: it has no name, advertises no services, and is neve
 |---|---|---|
 | 0–1 | `AA BB` header | matches openScale |
 | 2–7 | scale ID (`ed 67 39 86 b4 d7` for this scale) | constant across the capture |
-| 8 | packet counter | increments |
+| 8–10 | 24-bit little-endian counter, most likely a seconds clock | went from `68 42 e1` to `52 53 e5` between captures about 3 days apart (+265k) |
 | 15 | status: `0x02`/`0x03` = measuring, `0x23` = final (bit `0x20` set = locked) | observed |
 | 17–18 | weight, little-endian uint16, 0.01 kg (`6d 1a` = 67.65 kg) | matches the scale display |
-| 9–14, 16, 19–23 | unknown; 22–23 tick upward until locked | — |
+| 11–14, 16 | constant (`00 ff ff ff`, `10`) | both captures |
+| 19–21 | constant `52 59 04`, even with nobody on the scale | both captures, so not a body reading |
+| 22–23 | counter that ticks until the weight locks, then freezes | both captures |
 
-No impedance was seen, so body fat is not available from this scale (see Known gaps 1).
+No impedance is broadcast, so this scale gives weight only (see Known gaps 1).
 
 ## Rules
 
@@ -91,11 +93,11 @@ No impedance was seen, so body fat is not available from this scale (see Known g
 
 ## Known gaps
 
-1. **Body fat:** no impedance appears in the broadcast. Does the Feelfit app show body fat % for this scale? If yes, the impedance arrives some other way that we haven't decoded yet. If no, body fat is dropped for this scale.
+1. **Body fat:** resolved (2026-11-25): not available. In a barefoot weigh-in, held for about 9 s after locking, no byte except the clock changed, and bytes 19–21 are the same with nobody on the scale. This is a weight-only scale.
 2. **Background scanning reliability:** worked on the owner's phone on 2026-11-24 (app closed, screen locked, one weigh-in captured). Not yet tested after days of idle Doze, a reboot, or Bluetooth being toggled.
 3. **Unknown bytes** 9–14, 16 and 19–23. Byte 16 might be the unit (`0x10` = kg?). It hasn't been tested with the scale set to lb.
 4. **Close weights:** resolved for this household. The two people are more than 10 kg apart, so the 3 kg / 2 kg rule separates them easily. Until the second person is set up, each of their weigh-ins shows up as unassigned with a "Whose weigh-in?" notification.
-5. **Partner's data** stays on the owner's phone. How it reaches the partner's Apple Health is a later milestone.
+5. **Partner's data** stays on the owner's phone. Getting it to the partner's Apple Health is deferred (PRD D-11). Their weigh-ins stay stored as unassigned.
 6. **Two scales or a neighbour's scale:** the filter on the scale ID ignores other scales. Re-pairing is only possible from Settings.
 7. **Bluetooth toggled off and on:** the background scan may stop until Blob-log is reopened or the phone restarts. This is untested.
 8. **Android 12+ only** (minSdk 31). Is the owner's phone on Android 12 or later?
