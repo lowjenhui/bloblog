@@ -1,0 +1,17 @@
+# env / secrets
+.env
+.env.*
+*.keystore
+*.jks
+local.properties
+# Android / Gradle
+.gradle/
+build/
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+# misc
+.DS_Store
+__pycache__/

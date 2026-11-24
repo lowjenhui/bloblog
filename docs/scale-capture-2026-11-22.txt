@@ -1,0 +1,19 @@
+# Advertisements from the Yolanda scale, captured on macOS with tools/scan_scale.py, 2026-11-22.
+# Format: manufacturer id 0xffff, then data bytes. One weigh-in (67.65 kg), stepping off, stepping on again.
+aa bb ed 67 39 86 b4 d7 68 42 e1 00 ff ff ff 02 10 00 00 52 59 04 e8 25
+aa bb ed 67 39 86 b4 d7 6b 42 e1 00 ff ff ff 02 10 00 00 52 59 04 ee 25
+aa bb ed 67 39 86 b4 d7 6c 42 e1 00 ff ff ff 02 10 13 1a 52 59 04 f0 25
+aa bb ed 67 39 86 b4 d7 6d 42 e1 00 ff ff ff 02 10 6d 1a 52 59 04 f2 25
+aa bb ed 67 39 86 b4 d7 6e 42 e1 00 ff ff ff 02 10 6d 1a 52 59 04 f4 25
+aa bb ed 67 39 86 b4 d7 70 42 e1 00 ff ff ff 02 10 6d 1a 52 59 04 f7 25
+aa bb ed 67 39 86 b4 d7 73 42 e1 00 ff ff ff 03 10 6d 1a 52 59 04 f4 25
+aa bb ed 67 39 86 b4 d7 75 42 e1 00 ff ff ff 02 10 00 00 52 59 04 00 26
+aa bb ed 67 39 86 b4 d7 76 42 e1 00 ff ff ff 02 10 00 00 52 59 04 02 26
+aa bb ed 67 39 86 b4 d7 77 42 e1 00 ff ff ff 02 10 00 00 52 59 04 04 26
+aa bb ed 67 39 86 b4 d7 7b 42 e1 00 ff ff ff 02 10 6d 1a 52 59 04 0b 26
+aa bb ed 67 39 86 b4 d7 82 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
+aa bb ed 67 39 86 b4 d7 83 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
+aa bb ed 67 39 86 b4 d7 84 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
+aa bb ed 67 39 86 b4 d7 85 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
+aa bb ed 67 39 86 b4 d7 87 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
+aa bb ed 67 39 86 b4 d7 89 42 e1 00 ff ff ff 23 10 6d 1a 52 59 04 0e 26
