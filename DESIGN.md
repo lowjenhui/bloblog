@@ -89,6 +89,8 @@ Intentional exceptions: the "Whose?" row sits **−1** above its slot so it cove
 
 ## Components
 
+- **Solo mode (Just me):** no person chips and no Compare. ⚙ (40 × 40, `surface-grey`) sits at the right end of the pinned headline.
+- **Segmented control** ("Who weighs in?"): a full-width `surface-grey` track with no inner padding, two 40-tall segments with 14 text; the selected one is `select` / `on-select`, like the range pills.
 - **Settings** (from ⚙): a `Settings` title, then a **People** section (as before) and an **Appearance** section: three radio rows, `Colourful` / `Calm` / `Dark`, each with a one-line description and three 16 dp colour dots ringed with a 1 dp `#8a8599` outline, so they show on any background.
 
 - **Person chips:** 40 tall, fully rounded and equal width, followed by a 40 × 40 round ⚙. Selected uses the gradient with `text`; unselected uses `surface-grey` / `on-grey`. The third chip is **Compare**.

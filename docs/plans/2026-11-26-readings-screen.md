@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Project rule (CLAUDE.md): Sonnet 5.5 (medium) implements each task; Opus reviews each diff and runs the tests, then commits. Implementers do **not** commit.
 
-**Goal:** Replace the single readings list with person tabs, a pinned headline, a trend graph (Day/Week/Month/3M/Year), a month-filtered History, a Compare view, a Settings screen (People + Appearance), three themes, junk protection and live updates.
+**Goal:** Replace the single readings list with a Just me / Two people mode, person tabs, a pinned headline, a trend graph (Day/Week/Month/3M/Year), a month-filtered History, a Compare view, a Settings screen (People + Appearance), three themes, junk protection and live updates.
 
 **Architecture:** Plain Android Views plus Material Components and RecyclerView. Pure-Kotlin logic (`Trend.kt`, `Notice.kt`, `Assign.kt`) holds every rule the spec pins and is unit-tested. One custom `TrendChartView` draws both graph modes on a `Canvas`. Home is a `CoordinatorLayout`: an `AppBarLayout` with the strip and chips (they scroll away) and the headline (pinned, lifting shadow), over a `RecyclerView` holding the graph header, the History header, the month chips and the rows. Themes are three XML styles resolved through custom attributes.
 
@@ -221,7 +221,36 @@
 - [ ] **Step 4:** Run, then the full check.
 - [ ] **Step 5:** Report for review (`feat: settings with people and appearance`).
 
-### Task 10: Live updates
+### Task 10: Just me / Two people modes
+
+**Files:**
+- Create: `app/src/main/java/app/bloblog/Mode.kt`
+- Modify: `Db.kt` (`refs` filtered by mode), `Scanner.kt`, `MainActivity.kt`, `HomeAdapter.kt`, `RowActions.kt`, `SettingsActivity.kt`
+- Test: `ModeTest.kt`
+
+**Interfaces:**
+- `enum class PeopleMode { SOLO, DUO }`, plus `object ModePrefs { fun get(context: Context, db: Db): PeopleMode; fun set(context: Context, mode: PeopleMode) }`, using SharedPreferences `"settings"`, key `"people_mode"`. When the key is unset, `get` returns `DUO` if `db.people().size == 2`, else `SOLO` (spec §5.8 default), and saves it.
+- `fun Db.activePeople(mode: PeopleMode): List<Person>`: only the `isMe` person in `SOLO`, everyone in `DUO`
+- `Db.refs(atMs: Long, mode: PeopleMode)` replaces `refs(atMs)`: only active people. Update `ScanReceiver` and Task 3's tests.
+- Home in `SOLO`: the chip row is hidden, ⚙ is shown in the headline row, and Compare is unreachable. If the saved `tab` is the hidden person or Compare, fall back to the owner.
+- `RowActions.openRowSheet` in `SOLO` for an unassigned reading: `This is me`, `🗑 Delete weigh-in`, and the link `Someone else uses this scale? Add them` → Task 9's add dialog; on save, `ModePrefs.set(DUO)` and `Db.backfill`
+- Settings: the `Who weighs in?` segmented control above the people list, with the per-mode note text from spec §5.8. Switching follows the spec §5.8 "Switching" rules.
+
+- [ ] **Step 1: Write the failing tests** (Robolectric):
+  - `newInstallIsSolo`
+  - `upgradeWithTwoPeopleIsDuo`
+  - `soloAssignIgnoresHiddenPerson`: in solo, a reading at the hidden person's weight comes out unassigned
+  - `soloHidesChipsAndCompare`
+  - `soloFallsBackFromHiddenTab`
+  - `switchToDuoWithoutSecondOpensAdd`: cancelling keeps `SOLO`
+  - `switchToDuoRestoresAndBackfills`
+  - `someoneElseLinkAddsAndSwitches`
+- [ ] **Step 2:** Run. Expected: FAIL.
+- [ ] **Step 3:** Implement.
+- [ ] **Step 4:** Run, then the full check.
+- [ ] **Step 5:** Report for review (`feat: just me and two people modes`).
+
+### Task 11: Live updates
 
 **Files:**
 - Modify: `Scanner.kt` (`ScanReceiver`), `MainActivity.kt`
@@ -237,9 +266,9 @@
 - [ ] **Step 4:** Run, then the full check.
 - [ ] **Step 5:** Report for review (`feat: live updates`).
 
-### Task 11: Docs travel with the code
+### Task 12: Docs travel with the code
 
-**Files:** `SPEC.md` (rule 3 → spec §7.1; Screens → spec §5; Build status v0.3), `PRD.md` (D-8 reversed as **D-12**; D-9 narrowed per spec decision 7; stories **US-9…US-16**, one per spec §5.1–§5.7 plus themes, each with testable criteria naming the tests above; backlog: tagging, goals), `CLAUDE.md` (themes and the new files in one line each), `app/build.gradle.kts` (`versionName = "0.3"`, `versionCode = 3`)
+**Files:** `SPEC.md` (rule 3 → spec §7.1; Screens → spec §5; Build status v0.3), `PRD.md` (D-8 reversed as **D-12**; D-9 narrowed per spec decision 7; stories **US-9…US-17**, one per spec §5.1–§5.8 plus themes, each with testable criteria naming the tests above; backlog: tagging, goals), `CLAUDE.md` (themes and the new files in one line each), `app/build.gradle.kts` (`versionName = "0.3"`, `versionCode = 3`)
 
 - [ ] **Step 1:** Update the docs. Every behaviour sentence must match the spec, with no new behaviour.
 - [ ] **Step 2:** Run the full check. Expected: PASS, 0 lint errors.

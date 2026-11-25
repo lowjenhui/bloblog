@@ -14,7 +14,8 @@ Success: open the app and see today's weight at a glance, scroll a clean list of
 **Goals**
 - A person view per person: a pinned headline weight, a graph with five ranges, and History filtered by month.
 - A Compare view: both people's change on one graph, plus a two-line prose summary.
-- A Settings screen: People (add the second person, rename, edit starting weight) and Appearance (Colourful, Calm or Dark).
+- A Settings screen: People ("Who weighs in?" Just me / Two people; add the second person, rename, edit starting weight) and Appearance (Colourful, Calm or Dark).
+- A solo mode for people who use the scale alone: no person chips, no Compare.
 - Junk protection: hold back suspicious jumps, confirm before deleting, and remove junk from Health Connect too.
 - Live updates while the app is open.
 
@@ -139,6 +140,29 @@ A dialog titled `Delete this weigh-in?`, with the body `81.20 kg on Mon 23 Nov a
 
 The existing dialog gets the wave sticker and follows DESIGN.md. Its behaviour is unchanged: it creates the owner.
 
+### 5.8 Modes: Just me / Two people
+
+The app is public, so most people use it alone. It has two modes:
+
+- **Setting:** `Who weighs in?` with a segmented control `Just me` | `Two people` at the top of Settings → People. It's saved on the phone (`SharedPreferences` `"settings"`, key `"people_mode"`).
+- **Default:** a new install is `Just me` (setup is unchanged: one dialog, name and weight). An existing install that already has two people starts as `Two people`.
+
+**Just me**
+- Home has no person chips and no Compare. ⚙ moves to the right end of the pinned headline (40 × 40, `surface-grey`), so it's reachable even after scrolling. Below the top notice strip, the headline is first, 16 below the strip (or 16 from the top of the screen when there's no strip).
+- The headline label line 1 still shows the owner's name.
+- Assignment (§7.1) considers **only the owner**. A hidden second person never claims weigh-ins.
+- Row sheet for an unassigned weigh-in: `This is me` (owner avatar), `🗑 Delete weigh-in`, then a quiet link row `Someone else uses this scale? Add them` that opens the Add person dialog. Saving it switches to `Two people` and runs the backfill (§7.3).
+- Settings note under the people list: `Weigh-ins far from your weight are held back and ask “Whose?”, so guests and bags never reach Health Connect.`
+
+**Two people**
+- Everything else in §5 applies as written.
+- Settings note: `Weigh-ins are matched to the closest person. Only the person marked (Me) is sent to Health Connect.`
+
+**Switching**
+- `Just me` → `Two people` with no second person: the Add person dialog opens. `Cancel` leaves the mode on `Just me`.
+- `Just me` → `Two people` with a hidden second person: they reappear with all their data. The backfill (§7.3) runs for them, so weigh-ins held as "Whose?" while they were hidden can be matched.
+- `Two people` → `Just me`: the second person and their data are **kept but hidden**: no tab, no Compare, not considered by assignment. New weigh-ins near their weight are held as "Whose?". If Compare or their tab was open, Home switches to the owner's tab.
+
 ## 6. Graph rules
 
 - **Ranges** are rolling windows ending now: Day = today since midnight; Week = 7 days; Month = 30 days; 3M = 90 days; Year = 365 days.
@@ -194,6 +218,7 @@ No schema change:
 9. The Compare baseline is each person's 7-day average at the range start, with daily points and gaps (§5.2).
 10. Year gets five month labels on the x axis.
 12. Notices are an edge-to-edge cream strip above the person chips, and "Whose?" History rows are a full-bleed cream band (owner's decision, 2026-11-26).
+14. Modes (owner's decision, 2026-11-26): `Just me` / `Two people` in Settings → People. Just me is the default for new installs. Switching back to Just me hides the second person but keeps their data. Setup doesn't ask; the "Whose?" sheet offers `Someone else uses this scale? Add them`.
 13. Themes (owner's decision, 2026-11-26): one list, Colourful | Calm | Dark, with Colourful the default. It lives in Settings, which replaces the People screen. Calm is the softest neutral variant (white, cool greys, pale blob aqua and dusty pink). Dark floats the toast on a raised surface. This reverses the earlier "light only".
 11. Colours (owner's decision, 2026-11-26): blob aqua selections with plum text, ocean line for the owner, the icon's heart pink for the second person, the soft gradient on the selected person chip. See DESIGN.md.
 
