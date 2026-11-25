@@ -9,6 +9,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.YearMonth
+import java.time.ZoneId
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -93,7 +95,7 @@ class DbTest {
             close()
         }
         val db = Db(context)
-        assertEquals(Reading(1, 1000, 6765, null), db.latest().single())
+        assertEquals(Reading(1, 1000, 6765, null, false), db.latest().single())
         assertTrue(db.pendingForMe().isEmpty())
     }
 
@@ -107,5 +109,60 @@ class DbTest {
         // At day 5 nothing is in the last 7 days and the only assigned reading is from day 20,
         // so the reference falls back to the start weight, not the later reading.
         assertEquals(6630, db.refs(5 * day)[pid])
+    }
+
+    @Test fun readingsForRange() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        val pid = db.people().single().id
+        db.add(6000, 1000, pid); db.add(6100, 2000, pid); db.add(6200, 3000, pid); db.add(6300, 2500)
+        assertEquals(listOf(6000, 6100), db.readingsFor(pid, 1000, 3000).map { it.weightCentiKg })
+    }
+
+    @Test fun historyIncludesUnassigned() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        db.addPerson("Guest", 7800, isMe = false)
+        val (me, guest) = db.people().map { it.id }
+        val sgt = ZoneId.of("Asia/Singapore")
+        val t = 1_700_000_000_000L // Nov 2023
+        db.add(6000, t, me); db.add(7800, t + 1000, guest); db.add(6100, t + 2000)
+        db.add(6200, t + 400 * day, me) // another month
+        assertEquals(listOf(6100, 6000), db.historyMonth(me, YearMonth.of(2023, 11), sgt).map { it.weightCentiKg })
+        assertEquals(listOf(6100), db.unassigned().map { it.weightCentiKg })
+    }
+
+    @Test fun readingCarriesWritten() {
+        val db = Db(context)
+        val id = db.saveIfNew(packet, 0, raw)!!
+        assertEquals(false, db.reading(id)!!.written)
+        db.markWritten(id, true)
+        assertEquals(true, db.reading(id)!!.written)
+    }
+
+    @Test fun monthsUseLocalZone() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        val pid = db.people().single().id
+        val sgt = ZoneId.of("Asia/Singapore")
+        db.add(6000, java.time.ZonedDateTime.of(2026, 10, 31, 23, 59, 0, 0, sgt).toInstant().toEpochMilli(), pid)
+        db.add(6000, java.time.ZonedDateTime.of(2026, 12, 1, 0, 0, 0, 0, sgt).toInstant().toEpochMilli() + 1, pid)
+        assertEquals(listOf(YearMonth.of(2026, 10), YearMonth.of(2026, 12)), db.months(pid, sgt))
+    }
+
+    @Test fun updatePersonPersists() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        val pid = db.people().single().id
+        db.updatePerson(pid, "Rin", 6500)
+        assertEquals("Rin", db.people().single().name)
+        assertEquals(6500, db.startWeight(pid))
+    }
+
+    @Test fun personOrder() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        db.addPerson("Guest", 7800, isMe = false)
+        assertEquals(listOf(0, 1), db.people().map { it.order })
     }
 }

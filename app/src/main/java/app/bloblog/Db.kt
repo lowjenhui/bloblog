@@ -4,9 +4,11 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import java.time.YearMonth
+import java.time.ZoneId
 
-data class Reading(val id: Long, val takenAt: Long, val weightCentiKg: Int, val personId: Long?)
-data class Person(val id: Long, val name: String, val isMe: Boolean)
+data class Reading(val id: Long, val takenAt: Long, val weightCentiKg: Int, val personId: Long?, val written: Boolean)
+data class Person(val id: Long, val name: String, val isMe: Boolean, val order: Int)
 
 class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "bloblog.db", null, 2) {
     override fun onCreate(db: SQLiteDatabase) {
@@ -41,11 +43,11 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
 
     private fun readings(where: String = "", vararg args: Any, limit: Int? = null): List<Reading> =
         readableDatabase.rawQuery(
-            "SELECT id, taken_at, weight_centi, person_id FROM reading $where ORDER BY taken_at DESC" +
+            "SELECT id, taken_at, weight_centi, person_id, hc_written FROM reading $where ORDER BY taken_at DESC" +
                 if (limit != null) " LIMIT $limit" else "", // limit is an Int, never user text
             args.map { it.toString() }.toTypedArray()
         ).use { c ->
-            buildList { while (c.moveToNext()) add(Reading(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getLong(3))) }
+            buildList { while (c.moveToNext()) add(Reading(c.getLong(0), c.getLong(1), c.getInt(2), if (c.isNull(3)) null else c.getLong(3), c.getInt(4) == 1)) }
         }
 
     fun latest(limit: Int = 500) = readings(limit = limit)
@@ -54,8 +56,32 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
 
     fun people(): List<Person> =
         readableDatabase.rawQuery("SELECT id, name, is_me FROM person ORDER BY id", null).use { c ->
-            buildList { while (c.moveToNext()) add(Person(c.getLong(0), c.getString(1), c.getInt(2) == 1)) }
+            buildList { while (c.moveToNext()) add(Person(c.getLong(0), c.getString(1), c.getInt(2) == 1, c.position)) }
         }
+
+    fun updatePerson(id: Long, name: String, startWeightCenti: Int) {
+        writableDatabase.execSQL("UPDATE person SET name = ?, start_weight_centi = ? WHERE id = ?", arrayOf(name, startWeightCenti, id))
+    }
+
+    fun startWeight(personId: Long): Int =
+        readableDatabase.rawQuery("SELECT start_weight_centi FROM person WHERE id = ?", arrayOf(personId.toString()))
+            .use { it.moveToFirst(); it.getInt(0) }
+
+    /** Readings in [fromMs, toMs), oldest first. */
+    fun readingsFor(personId: Long, fromMs: Long, toMs: Long) =
+        readings("WHERE person_id = ? AND taken_at >= ? AND taken_at < ?", personId, fromMs, toMs).reversed()
+
+    fun historyMonth(personId: Long, month: YearMonth, zone: ZoneId): List<Reading> {
+        fun ms(m: YearMonth) = m.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        return readings("WHERE (person_id = ? OR person_id IS NULL) AND taken_at >= ? AND taken_at < ?",
+            personId, ms(month), ms(month.plusMonths(1)))
+    }
+
+    fun months(personId: Long, zone: ZoneId): List<YearMonth> =
+        readings("WHERE person_id = ? OR person_id IS NULL", personId)
+            .map { YearMonth.from(java.time.Instant.ofEpochMilli(it.takenAt).atZone(zone)) }.distinct().sorted()
+
+    fun unassigned() = readings("WHERE person_id IS NULL").reversed()
 
     fun me() = people().firstOrNull { it.isMe }
 
