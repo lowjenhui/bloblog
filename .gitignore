@@ -15,3 +15,6 @@ captures/
 # misc
 .DS_Store
 __pycache__/
+
+# brainstorm mockups
+.superpowers/
