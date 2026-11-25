@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="bl_background" format="reference|color" />
+    <attr name="bl_text" format="reference|color" />
+    <attr name="bl_textMuted" format="reference|color" />
+    <attr name="bl_divider" format="reference|color" />
+    <attr name="bl_gridline" format="reference|color" />
+    <attr name="bl_surfaceGrey" format="reference|color" />
+    <attr name="bl_onGrey" format="reference|color" />
+    <attr name="bl_select" format="reference|color" />
+    <attr name="bl_onSelect" format="reference|color" />
+    <attr name="bl_personSelectedBg" format="reference|color" />
+    <attr name="bl_onPersonSelected" format="reference|color" />
+    <attr name="bl_ownerLine" format="reference|color" />
+    <attr name="bl_ownerDot" format="reference|color" />
+    <attr name="bl_ownerText" format="reference|color" />
+    <attr name="bl_ownerTint" format="reference|color" />
+    <attr name="bl_secondLine" format="reference|color" />
+    <attr name="bl_secondDot" format="reference|color" />
+    <attr name="bl_secondText" format="reference|color" />
+    <attr name="bl_secondTint" format="reference|color" />
+    <attr name="bl_notice" format="reference|color" />
+    <attr name="bl_warnText" format="reference|color" />
+    <attr name="bl_danger" format="reference|color" />
+    <attr name="bl_onDanger" format="reference|color" />
+    <attr name="bl_toast" format="reference|color" />
+    <attr name="bl_onToast" format="reference|color" />
+    <attr name="bl_toastStroke" format="reference|color" />
+    <attr name="bl_scrim" format="reference|color" />
+</resources>

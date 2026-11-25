@@ -13,7 +13,7 @@
     <application
         android:label="Blob-log"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@android:style/Theme.DeviceDefault.DayNight">
+        android:theme="@style/Theme.Bloblog.Colourful">
 
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>

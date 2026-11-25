@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Bloblog.Colourful" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">#ffffff</item>
+        <item name="bl_background">#ffffff</item>
+        <item name="bl_text">#3d2f55</item>
+        <item name="bl_textMuted">#6b6680</item>
+        <item name="bl_divider">#eceaf2</item>
+        <item name="bl_gridline">#e3e7f5</item>
+        <item name="bl_surfaceGrey">#f1f0f4</item>
+        <item name="bl_onGrey">#4b465c</item>
+        <item name="bl_select">#3fe3f2</item>
+        <item name="bl_onSelect">#3d2f55</item>
+        <item name="bl_personSelectedBg">@drawable/bg_person_selected_colourful</item>
+        <item name="bl_onPersonSelected">#3d2f55</item>
+        <item name="bl_ownerLine">#0091c2</item>
+        <item name="bl_ownerDot">#7fdcef</item>
+        <item name="bl_ownerText">#006f94</item>
+        <item name="bl_ownerTint">#dcfaff</item>
+        <item name="bl_secondLine">#fc568c</item>
+        <item name="bl_secondDot">#ffb3cd</item>
+        <item name="bl_secondText">#c8185c</item>
+        <item name="bl_secondTint">#ffeef4</item>
+        <item name="bl_notice">#fff3dc</item>
+        <item name="bl_warnText">#7a4b00</item>
+        <item name="bl_danger">#c42a62</item>
+        <item name="bl_onDanger">#ffffff</item>
+        <item name="bl_toast">#3d2f55</item>
+        <item name="bl_onToast">#ffffff</item>
+        <item name="bl_toastStroke">#00000000</item>
+        <item name="bl_scrim">#663d2f55</item>
+    </style>
+    <style name="Theme.Bloblog.Calm" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowBackground">#ffffff</item>
+        <item name="bl_background">#ffffff</item>
+        <item name="bl_text">#1f2430</item>
+        <item name="bl_textMuted">#5f6573</item>
+        <item name="bl_divider">#eceef1</item>
+        <item name="bl_gridline">#eceef2</item>
+        <item name="bl_surfaceGrey">#f2f3f5</item>
+        <item name="bl_onGrey">#3f4452</item>
+        <item name="bl_select">#c4ecf0</item>
+        <item name="bl_onSelect">#1f2430</item>
+        <item name="bl_personSelectedBg">#e3f5f7</item>
+        <item name="bl_onPersonSelected">#1f2430</item>
+        <item name="bl_ownerLine">#3b9aa8</item>
+        <item name="bl_ownerDot">#b5dde3</item>
+        <item name="bl_ownerText">#2f7a86</item>
+        <item name="bl_ownerTint">#e3f5f7</item>
+        <item name="bl_secondLine">#d4789a</item>
+        <item name="bl_secondDot">#ecc0d0</item>
+        <item name="bl_secondText">#a84d6e</item>
+        <item name="bl_secondTint">#f9eaf0</item>
+        <item name="bl_notice">#f7f1e6</item>
+        <item name="bl_warnText">#7a5420</item>
+        <item name="bl_danger">#c42a62</item>
+        <item name="bl_onDanger">#ffffff</item>
+        <item name="bl_toast">#1f2430</item>
+        <item name="bl_onToast">#ffffff</item>
+        <item name="bl_toastStroke">#00000000</item>
+        <item name="bl_scrim">#661f2430</item>
+    </style>
+    <style name="Theme.Bloblog.Dark" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">#16131d</item>
+        <item name="bl_background">#16131d</item>
+        <item name="bl_text">#f1eef7</item>
+        <item name="bl_textMuted">#a9a3b8</item>
+        <item name="bl_divider">#2f2a3a</item>
+        <item name="bl_gridline">#2f2a3a</item>
+        <item name="bl_surfaceGrey">#221e2b</item>
+        <item name="bl_onGrey">#d9d4e3</item>
+        <item name="bl_select">#5fd8e8</item>
+        <item name="bl_onSelect">#16131d</item>
+        <item name="bl_personSelectedBg">#25414a</item>
+        <item name="bl_onPersonSelected">#f1eef7</item>
+        <item name="bl_ownerLine">#5fd8e8</item>
+        <item name="bl_ownerDot">#2f8f9c</item>
+        <item name="bl_ownerText">#7fe3f0</item>
+        <item name="bl_ownerTint">#1d3a40</item>
+        <item name="bl_secondLine">#ff8fb3</item>
+        <item name="bl_secondDot">#a3576f</item>
+        <item name="bl_secondText">#ffa3c1</item>
+        <item name="bl_secondTint">#3a2230</item>
+        <item name="bl_notice">#3a2f1f</item>
+        <item name="bl_warnText">#ffd58a</item>
+        <item name="bl_danger">#ff8fb3</item>
+        <item name="bl_onDanger">#16131d</item>
+        <item name="bl_toast">#2c2738</item>
+        <item name="bl_onToast">#f1eef7</item>
+        <item name="bl_toastStroke">#3a3448</item>
+        <item name="bl_scrim">#99000000</item>
+    </style>
+</resources>
