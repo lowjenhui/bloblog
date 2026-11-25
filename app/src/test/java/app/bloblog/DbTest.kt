@@ -32,10 +32,47 @@ class DbTest {
         val db = Db(context)
         db.addPerson("Me", 6630, isMe = true)
         val pid = db.people().single().id
-        assertEquals(6630, db.refs()[pid])
+        assertEquals(6630, db.refs(0)[pid])
         val id = db.saveIfNew(ScalePacket("id", 0x23, 6700), 0, raw)!!
         db.setPerson(id, pid)
-        assertEquals(6700, db.refs()[pid])
+        assertEquals(6700, db.refs(0)[pid])
+    }
+
+    private fun Db.add(w: Int, at: Long, person: Long? = null) {
+        val id = saveIfNew(ScalePacket("id", 0x23, w), at, raw)!!
+        if (person != null) setPerson(id, person)
+    }
+
+    private val day = 86_400_000L
+
+    @Test fun refsUseSevenDayAverage() {
+        val db = Db(context)
+        db.addPerson("Me", 6000, isMe = true)
+        val pid = db.people().single().id
+        val now = 20 * day
+        db.add(6000, now - 10 * day, pid)
+        db.add(6600, now - 3 * day, pid)
+        db.add(6700, now - 1 * day, pid)
+        assertEquals(6650, db.refs(now)[pid])
+    }
+
+    @Test fun luggageHeldBack() {
+        val db = Db(context)
+        db.addPerson("Me", 6600, isMe = true)
+        db.addPerson("Guest", 7840, isMe = false)
+        assertNull(assign(8160, db.refs(0)))
+    }
+
+    @Test fun backfillOnlyNewPerson() {
+        val db = Db(context)
+        db.add(7800, 0)
+        db.add(6610, day)
+        db.addPerson("Me", 6630, isMe = true)
+        db.addPerson("Guest", 7840, isMe = false)
+        val guest = db.people().last().id
+        assertEquals(1, db.backfill(guest))
+        assertEquals(listOf(null, guest), db.latest().map { it.personId }) // newest (6610) first
+        assertTrue(db.pendingForMe().isEmpty())
     }
 
     @Test fun pendingForMe() {
@@ -58,5 +95,17 @@ class DbTest {
         val db = Db(context)
         assertEquals(Reading(1, 1000, 6765, null), db.latest().single())
         assertTrue(db.pendingForMe().isEmpty())
+    }
+
+    @Test fun refsIgnoreLaterReadings() {
+        val db = Db(context)
+        db.addPerson("Me", 6630, isMe = true)
+        val pid = db.people().single().id
+        val day = 86_400_000L
+        val later = db.saveIfNew(ScalePacket("id", 0x23, 7000), 20 * day, raw)!!
+        db.setPerson(later, pid)
+        // At day 5 nothing is in the last 7 days and the only assigned reading is from day 20,
+        // so the reference falls back to the start weight, not the later reading.
+        assertEquals(6630, db.refs(5 * day)[pid])
     }
 }

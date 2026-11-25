@@ -67,12 +67,25 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
         })
     }
 
-    /** Each person's reference weight: latest assigned reading, else starting weight (spec rule 3). */
-    fun refs(): Map<Long, Int> =
+    /** Each person's reference weight at [atMs]: 7-day average, else latest assigned reading, else starting weight (spec §7.1). */
+    fun refs(atMs: Long): Map<Long, Int> =
         readableDatabase.rawQuery(
-            "SELECT p.id, COALESCE((SELECT weight_centi FROM reading r WHERE r.person_id = p.id " +
-                "ORDER BY r.taken_at DESC LIMIT 1), p.start_weight_centi) FROM person p", null
+            "SELECT p.id, COALESCE(" +
+                "(SELECT CAST(ROUND(AVG(weight_centi)) AS INTEGER) FROM reading r " +
+                "WHERE r.person_id = p.id AND r.taken_at > ? AND r.taken_at <= ?), " +
+                "(SELECT weight_centi FROM reading r WHERE r.person_id = p.id AND r.taken_at <= ? ORDER BY r.taken_at DESC LIMIT 1), " +
+                "p.start_weight_centi) FROM person p",
+            arrayOf((atMs - 7 * 86_400_000L).toString(), atMs.toString(), atMs.toString())
         ).use { c -> buildMap { while (c.moveToNext()) put(c.getLong(0), c.getInt(1)) } }
+
+    /** After a person is added: gives them the unassigned readings that now match them (spec §7.3). Returns the count. */
+    fun backfill(newPersonId: Long): Int {
+        var n = 0
+        for (r in readings("WHERE person_id IS NULL").reversed()) {
+            if (assign(r.weightCentiKg, refs(r.takenAt)) == newPersonId) { setPerson(r.id, newPersonId); n++ }
+        }
+        return n
+    }
 
     fun setPerson(readingId: Long, personId: Long?) {
         writableDatabase.execSQL("UPDATE reading SET person_id = ? WHERE id = ?", arrayOf(personId, readingId))

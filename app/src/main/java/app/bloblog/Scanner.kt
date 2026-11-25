@@ -55,11 +55,12 @@ class ScanReceiver : BroadcastReceiver() {
             try {
                 val db = Db(context)
                 for (r in results) {
+                    val now = System.currentTimeMillis()
                     val raw = r.scanRecord?.getManufacturerSpecificData(ScalePacket.MANUFACTURER_ID) ?: continue
                     val p = ScalePacket.parse(raw) ?: continue
-                    val id = db.saveIfNew(p, System.currentTimeMillis(), raw) ?: continue
+                    val id = db.saveIfNew(p, now, raw) ?: continue
                     Log.i("Bloblog", "saved ${p.weightCentiKg / 100.0} kg")
-                    val personId = assign(p.weightCentiKg, db.refs())
+                    val personId = assign(p.weightCentiKg, db.refs(now))
                     db.setPerson(id, personId)
                     val reading = db.reading(id) ?: continue
                     if (personId == null) Notifications.unassigned(context, reading)
