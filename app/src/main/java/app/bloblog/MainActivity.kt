@@ -30,11 +30,12 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     private val zone = ZoneId.systemDefault()
     private val dayFmt = java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
+    internal var createdTheme = AppTheme.COLOURFUL
     private var setupShowing = false
     private var askedNotifications = false
     private var hcAvailable = false
     private var hcConnected = false
-    private var tab = 0L // person id; -1 is Compare (Task 8)
+    internal var tab = 0L // person id; -1 is Compare (Task 8)
     internal var range = Range.MONTH
     private var month: YearMonth? = null
     private var shownPts = emptyList<Pt>()
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyAppTheme()
+        createdTheme = ThemePrefs.get(this)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         val list = findViewById<RecyclerView>(R.id.list)
@@ -97,6 +99,8 @@ class MainActivity : ComponentActivity() {
     // shortcut: the page refreshes only when the screen is opened or resumed (live updates are a later task).
     override fun onResume() {
         super.onResume()
+        // Settings changed the theme: recreate so the new theme applies; tab/range/month come back via savedInstanceState.
+        if (ThemePrefs.get(this) != createdTheme) return recreate()
         scanState = Scanner.start(this)
         render()
         lifecycleScope.launch { HealthConnect.syncPending(this@MainActivity); checkHc(); render() }
@@ -183,7 +187,7 @@ class MainActivity : ComponentActivity() {
             text = "⚙"; textSize = 18f; gravity = Gravity.CENTER
             setTextColor(token(R.attr.bl_onGrey)); fill(R.attr.bl_surfaceGrey, 20, inset = true)
             contentDescription = "Settings"
-            setOnClickListener { } // Task 9
+            setOnClickListener { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) }
             row.addView(this, LinearLayout.LayoutParams(dp(48), dp(48)))
         }
     }
@@ -254,6 +258,8 @@ class MainActivity : ComponentActivity() {
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), 0)
+            addView(ImageView(this@MainActivity).apply { setImageResource(R.drawable.blob_wave); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },
+                LinearLayout.LayoutParams(dp(64), dp(64)).apply { gravity = Gravity.CENTER_HORIZONTAL })
             addView(name); addView(weight)
         }
         val dialog = AlertDialog.Builder(this)

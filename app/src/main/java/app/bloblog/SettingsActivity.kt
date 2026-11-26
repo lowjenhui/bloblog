@@ -1,0 +1,143 @@
+package app.bloblog
+
+import android.os.Bundle
+import android.text.InputType
+import android.view.ContextThemeWrapper
+import android.view.Gravity
+import android.view.View
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.ScrollView
+import android.widget.TextView
+import androidx.activity.ComponentActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.util.Locale
+
+/** Settings: People and Appearance (spec §5.3). */
+class SettingsActivity : ComponentActivity() {
+    private val rows = RowActions(this) {}
+    private lateinit var col: LinearLayout
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        applyAppTheme()
+        super.onCreate(savedInstanceState)
+        col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)) }
+        setContentView(ScrollView(this).apply { addView(col) })
+        render()
+    }
+
+    private fun render() {
+        col.removeAllViews()
+        val db = Db(this)
+        val people = db.people()
+        col.addView(text("Settings", 24f, R.attr.bl_text, bold = true))
+
+        col.addView(text("People", 16f, R.attr.bl_text, bold = true), lp(top = 24))
+        val intro = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
+        intro.addView(ImageView(this).apply { setImageResource(R.drawable.blob_wave); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },
+            LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) })
+        intro.addView(text("Who steps on the scale. Weigh-ins are matched to the closest person.", 14f, R.attr.bl_textMuted))
+        col.addView(intro, lp(top = 8))
+        val hcAvailable = HealthConnect.client(this) != null
+        people.forEachIndexed { i, p ->
+            col.addView(personRow(p, db.startWeight(p.id), hcAvailable))
+            if (i < people.lastIndex) col.addView(View(this).apply { fill(R.attr.bl_divider) }, LinearLayout.LayoutParams(-1, dp(1)))
+        }
+        if (people.size < 2) col.addView(text("+ Add person", 14f, R.attr.bl_onSelect).apply {
+            gravity = Gravity.CENTER; fill(R.attr.bl_select, 20, inset = true)
+            setOnClickListener { editPerson(null) }
+        }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+
+        col.addView(text("Appearance", 16f, R.attr.bl_text, bold = true), lp(top = 32))
+        val current = ThemePrefs.get(this)
+        for ((t, desc) in listOf(AppTheme.COLOURFUL to "Blob colours and a soft gradient", AppTheme.CALM to "Neutral greys with soft blob colours", AppTheme.DARK to "Easy on the eyes at night")) {
+            col.addView(themeRow(t, desc, t == current))
+        }
+        col.addView(text("Each person's colour is also their line on the Compare tab. Only the person marked (Me) is sent to Health Connect.", 12f, R.attr.bl_textMuted), lp(top = 12))
+    }
+
+    private fun personRow(p: Person, startCenti: Int, hcAvailable: Boolean): View {
+        val row = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(16), 0, dp(16))
+            setOnClickListener { editPerson(p) }
+        }
+        row.addView(text(initials(p.name), 14f, p.textAttr(), bold = true).apply {
+            gravity = Gravity.CENTER; fill(if (p.order == 0) R.attr.bl_ownerTint else R.attr.bl_secondTint, 20)
+        }, LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) })
+        val lines = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lines.addView(text(p.name + if (p.isMe) " (Me)" else "", 16f, R.attr.bl_text).apply {
+            if (p.isMe) text = android.text.SpannableStringBuilder(p.name).append(" (Me)").also {
+                it.setSpan(android.text.style.ForegroundColorSpan(token(R.attr.bl_textMuted)), p.name.length, it.length, 0)
+            }
+        })
+        lines.addView(text(when { !p.isMe -> "Saved in Blob-log only"; hcAvailable -> "Sent to Health Connect"; else -> "Health Connect isn't available on this phone" }, 12f, R.attr.bl_textMuted))
+        lines.addView(text("Started at %.2f kg".format(Locale.ROOT, startCenti / 100.0), 12f, R.attr.bl_textMuted))
+        row.addView(lines, LinearLayout.LayoutParams(0, -2, 1f))
+        row.addView(text("›", 18f, R.attr.bl_textMuted))
+        return row
+    }
+
+    private fun themeRow(t: AppTheme, desc: String, selected: Boolean): View {
+        val row = LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL; setPadding(0, dp(12), 0, dp(12))
+            setOnClickListener { ThemePrefs.set(this@SettingsActivity, t); recreate() }
+        }
+        row.addView(RadioButton(this).apply { isChecked = selected; isClickable = false })
+        val lines = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lines.addView(text(t.name.lowercase().replaceFirstChar { it.uppercase() }, 16f, R.attr.bl_text))
+        lines.addView(text(desc, 12f, R.attr.bl_textMuted))
+        row.addView(lines, LinearLayout.LayoutParams(0, -2, 1f))
+        val themed = ContextThemeWrapper(this, t.style) // dots show that theme's colours on any background
+        for (attr in listOf(R.attr.bl_select, R.attr.bl_ownerDot, R.attr.bl_secondDot)) {
+            row.addView(View(this).apply {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(themed.token(attr)); setStroke(dp(1), 0xFF8A8599.toInt())
+                }
+            }, LinearLayout.LayoutParams(dp(16), dp(16)).apply { marginStart = dp(4) })
+        }
+        return row
+    }
+
+    /** [p] null adds a person. The owner stays the owner (spec §9). */
+    private fun editPerson(p: Person?) {
+        val name = EditText(this).apply { hint = "Name"; setText(p?.name ?: "") }
+        val weight = EditText(this).apply {
+            hint = "Starting weight (kg)"
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            if (p != null) setText("%.2f".format(Locale.ROOT, Db(this@SettingsActivity).startWeight(p.id) / 100.0))
+        }
+        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(8), dp(24), 0); addView(name); addView(weight) }
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle(if (p == null) "Add person" else "Edit person")
+            .setView(form)
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Save", null) // real handler below, so invalid input keeps the dialog open
+            .show()
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val kg = weight.text.toString().replace(',', '.').toDoubleOrNull()
+            when {
+                name.text.isBlank() -> name.error = "Enter a name."
+                kg == null || kg < 20 || kg > 250 -> weight.error = "Enter a weight between 20 and 250 kg."
+                else -> {
+                    val db = Db(this); val n = name.text.toString().trim(); val centi = Math.round(kg * 100).toInt()
+                    dialog.dismiss()
+                    if (p != null) db.updatePerson(p.id, n, centi) else {
+                        db.addPerson(n, centi, isMe = false)
+                        db.backfill(db.people().last().id).takeIf { it > 0 }?.let { rows.showMatched(it, n) }
+                    }
+                    render()
+                }
+            }
+        }
+    }
+
+    private fun lp(top: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) }
+
+    private fun text(t: String, size: Float, attr: Int, bold: Boolean = false) = TextView(this).apply {
+        text = t; textSize = size; setTextColor(token(attr))
+        if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
+    }
+}

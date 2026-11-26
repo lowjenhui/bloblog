@@ -22,6 +22,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".SettingsActivity" android:exported="false" android:label="Settings" />
+
         <activity android:name=".PrivacyActivity" android:exported="true" android:label="Privacy">
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
