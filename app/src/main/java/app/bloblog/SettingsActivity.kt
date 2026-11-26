@@ -10,12 +10,35 @@ import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 
-/** Settings: People and Appearance (spec §5.3). */
+/** Settings: People, Appearance and Data (spec §5.3). */
 class SettingsActivity : ComponentActivity() {
     private val rows = RowActions(this) {}
     private lateinit var col: LinearLayout
+    private var fileName = ""
+    private val save = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                runCatching {
+                    val csv = weighInsCsv(Db(this@SettingsActivity), ZoneId.systemDefault())
+                    contentResolver.openOutputStream(uri)!!.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
+                }.isSuccess
+            }
+            // The picker may rename the file, and fileName is lost if the screen was recreated: ask for the real name.
+            val shown = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: fileName
+            if (ok) rows.toast("Saved $shown", R.drawable.blob_notebook) else rows.toast("Couldn't save the file. Try again.", null)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyAppTheme()
@@ -58,6 +81,20 @@ class SettingsActivity : ComponentActivity() {
         for ((t, desc) in listOf(AppTheme.COLOURFUL to "Blob colours and a soft gradient", AppTheme.CALM to "Neutral greys with soft blob colours", AppTheme.DARK to "Easy on the eyes at night")) {
             col.addView(themeRow(t, desc, t == current))
         }
+
+        col.addView(text("Data", 16f, R.attr.bl_text, bold = true), lp(top = 32))
+        col.addView(LinearLayout(this).apply {
+            gravity = Gravity.CENTER_VERTICAL; minimumHeight = dp(56)
+            isClickable = true; background = obtainStyledAttributes(intArrayOf(android.R.attr.selectableItemBackground)).run { getDrawable(0).also { recycle() } }
+            setOnClickListener { fileName = "blob-log-${LocalDate.now()}.csv"; save.launch(fileName) }
+            addView(ImageView(this@SettingsActivity).apply { setImageResource(R.drawable.blob_notebook); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },
+                LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) })
+            addView(LinearLayout(this@SettingsActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(text("Download weigh-ins (CSV)", 14f, R.attr.bl_text))
+                addView(text("Everyone's weigh-ins, one row each.", 12f, R.attr.bl_textMuted))
+            })
+        }, lp(top = 8))
     }
 
     private fun modeControl(mode: PeopleMode, db: Db) = LinearLayout(this).apply {

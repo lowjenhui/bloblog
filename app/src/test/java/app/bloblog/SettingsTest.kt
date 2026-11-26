@@ -86,4 +86,9 @@ class SettingsTest {
         val appearance = all.indexOfFirst { (it as? TextView)?.text?.toString() == "Appearance" }
         assert(note in 0 until appearance) { "note at $note, Appearance at $appearance" }
     }
+
+    @Test fun dataRowExists() {
+        val r = root(settings())
+        assertNotNull(text(r, "Data")); assertNotNull(text(r, "Download weigh-ins (CSV)")); assertNotNull(text(r, "Everyone's weigh-ins, one row each."))
+    }
 }
