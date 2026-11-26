@@ -8,13 +8,13 @@ Step on the scale and the weight lands in Health Connect. You don't even have to
 
 ## Status
 
-**v0.2. Works on the owner's phone.**
+**v0.3. Works on the owner's phone.**
 
 - Background capture with the app closed and the screen locked
-- One reading per weigh-in, stored in the app's own database with the raw scale bytes
-- Readings are assigned to the phone's owner by closest weight. Anything that isn't close, such as a guest, is held back and the app asks "Whose weigh-in?"
-- The owner's readings are written to Health Connect, with a retry when the app opens if a write fails
-- Next milestone: a second person, whose readings go to Apple Health
+- Home shows the latest weight, a trend graph (Day to Year) and a History list by month
+- Just me (default) or Two people, with a Compare view of both people's change
+- Three themes: Colourful, Calm and Dark
+- Only the owner's readings are written to Health Connect. Anything that isn't close, such as a guest or a bag, is held back and the app asks "Whose weigh-in?"
 
 Body fat isn't supported: this scale doesn't broadcast impedance (see `SPEC.md`, known gap 1).
 
