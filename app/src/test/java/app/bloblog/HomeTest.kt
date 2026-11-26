@@ -172,6 +172,18 @@ class HomeTest {
         assertTrue(monthChip.height >= min)
     }
 
+    @Test fun monthChipIsAPill() {
+        val p = db().me()!!.id
+        add(p, now - hour, 6500)
+        val a = home()
+        val dp = a.resources.displayMetrics.density
+        val chip = texts(a.findViewById(R.id.list)).first { it.text.toString() == thisMonth() }
+        // fill() used to wipe the chip's 16 dp side padding, so it collapsed to a tall narrow rectangle.
+        assertEquals((16 * dp).toInt(), chip.paddingLeft)
+        assertEquals((16 * dp).toInt(), chip.paddingRight)
+        assertTrue("chip ${chip.width}x${chip.height}", chip.width >= (32 * dp).toInt())
+    }
+
     private fun compare(): MainActivity {
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         a.selectTab(-1); layOut(a)

@@ -45,8 +45,11 @@ fun View.fill(attr: Int, radiusDp: Int = 0, inset: Boolean = false) {
     val d = if (tv.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT)
         GradientDrawable().apply { setColor(tv.data); cornerRadius = context.dp(radiusDp).toFloat() }
     else context.getDrawable(tv.resourceId)!!
+    // Setting a background replaces the view's padding with the drawable's, so keep the padding the caller set.
+    val (l, t, r, b) = listOf(paddingLeft, paddingTop, paddingRight, paddingBottom)
     // inset: a 48 dp tap target that is drawn 40 dp tall
     background = if (inset) android.graphics.drawable.InsetDrawable(d, 0, context.dp(4), 0, context.dp(4)) else d
+    setPadding(l, t, r, b)
 }
 
 fun Person.lineAttr() = if (order == 0) R.attr.bl_ownerLine else R.attr.bl_secondLine
