@@ -18,6 +18,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    buildTypes {
+        release {
+            isMinifyEnabled = true    // R8 removes unused library code
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            // shortcut: signed with the debug key so it sideloads over the debug install; a real key is needed for any store
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
 }
 
 kotlin { jvmToolchain(17) }
