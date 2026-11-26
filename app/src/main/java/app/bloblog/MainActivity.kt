@@ -2,7 +2,10 @@ package app.bloblog
 
 import android.Manifest
 import android.app.AlertDialog
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -96,7 +99,29 @@ class MainActivity : ComponentActivity() {
         if (id >= 0) rows.openRowSheet(id)
     }
 
-    // shortcut: the page refreshes only when the screen is opened or resumed (live updates are a later task).
+    private val savedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            render()
+            val db = Db(this@MainActivity)
+            val r = db.reading(intent.getLongExtra("reading_id", -1)) ?: return
+            val name = db.people().firstOrNull { it.id == r.personId }?.name ?: return // unassigned: no message (spec §5.6)
+            rows.showSaved(name, r.weightCentiKg)
+        }
+    }
+
+    // Lint: API 31-32 has no flag overload; the sender uses setPackage, so only this app can deliver.
+    override fun onStart() {
+        super.onStart()
+        // ContextCompat keeps the receiver private on Android 12 too (adds a signature permission below API 33).
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, savedReceiver, IntentFilter(ACTION_READING_SAVED), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
+
+    override fun onStop() {
+        unregisterReceiver(savedReceiver)
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         // Settings changed the theme: recreate so the new theme applies; tab/range/month come back via savedInstanceState.

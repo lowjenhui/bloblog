@@ -16,6 +16,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+const val ACTION_READING_SAVED = "app.bloblog.READING_SAVED"
+
 object Scanner {
     enum class State { LISTENING, NO_PERMISSION, BLUETOOTH_OFF, FAILED }
 
@@ -65,6 +67,7 @@ class ScanReceiver : BroadcastReceiver() {
                     val reading = db.reading(id) ?: continue
                     if (personId == null) Notifications.unassigned(context, reading)
                     else if (personId == db.me()?.id) HealthConnect.write(context, reading)
+                    context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
                 }
             } catch (e: Exception) {
                 Log.e("Bloblog", "capture failed", e)

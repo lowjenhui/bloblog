@@ -1,0 +1,58 @@
+package app.bloblog
+
+import android.content.ContentValues
+import android.content.Context
+import android.content.Intent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ActivityController
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+class LiveUpdateTest {
+    private val context: Context = ApplicationProvider.getApplicationContext()
+
+    @Before fun freshDb() {
+        context.deleteDatabase("bloblog.db")
+        Db(context).apply { addPerson("Julia", 6500, true); addPerson("Sam Lee", 5500, false) }
+    }
+
+    private fun seed(personId: Long?): Long = Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
+        put("taken_at", System.currentTimeMillis()); put("weight_centi", 6570); put("scale_id", "s"); put("raw_hex", "")
+        put("person_id", personId); put("hc_written", 1)
+    })
+
+    private fun snackbarText(v: View): String? {
+        if (v is TextView && v.id == com.google.android.material.R.id.snackbar_text) return v.text.toString()
+        if (v is ViewGroup) for (i in 0 until v.childCount) snackbarText(v.getChildAt(i))?.let { return it }
+        return null
+    }
+
+    private fun send(c: ActivityController<MainActivity>, id: Long) {
+        context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+    }
+
+    @Test fun savedBroadcastRefreshesAndShowsSnackbar() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup()
+        send(c, seed(Db(context).people().first().id))
+        assertEquals("Saved 65.70 kg for Julia", snackbarText(c.get().findViewById(android.R.id.content)))
+    }
+
+    @Test fun unassignedBroadcastNoSnackbar() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup()
+        send(c, seed(null))
+        assertNull(snackbarText(c.get().findViewById(android.R.id.content)))
+    }
+}
