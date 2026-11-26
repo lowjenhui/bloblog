@@ -26,7 +26,7 @@ Fitbit or Google Health cloud sync, an iPhone app, delivering the partner's data
 | US-6 | I'm asked only when it's unclear. | An unassigned reading posts the spec notification. Assigned readings post nothing. |
 | US-7 | I can fix a wrong assignment. | Reassigning to or from the owner adds or removes the Health Connect record. "Delete weigh-in" removes it everywhere (see US-12, US-13). |
 | US-8 | The partner's data isn't lost. | Partner readings are stored with raw hex and are never written to Health Connect. |
-| US-9 | I open the app and see today's weight and my history. | `HomeTest`: `rangeDefaultsToMonth`, `headlineTextToday`, `headlineTextPastDay`, `emptyPersonShowsPlaceholder`, `historyNewestFirst`, `historyCountExcludesUnassigned`, `notSentMarkerOnlyOwner`, `whoseRowShownOnEveryTab`, `tapTargetsAtLeast48dp`. `NoticeTest` covers the notice strip priority. `TrendTest`: `axisCases`, `axisSingleValue`, `axisWideSpread`, `avg7BreaksAfterGap`, `monthLabelsAcrossYear`. `TrendChartViewTest`: `contentDescriptionPerson`, `emptyRangeDescription`, `scrubReportsNearestIndex`, `plotStartsAfterLabelGutter`. `DbTest`: `readingsForRange`, `historyIncludesUnassigned`, `monthsUseLocalZone`. |
+| US-9 | I open the app and see today's weight and my history. | `HomeTest`: `rangeDefaultsToMonth`, `headlineTextToday`, `headlineTextPastDay`, `emptyPersonShowsPlaceholder`, `historyNewestFirst`, `historyCountExcludesUnassigned`, `notSentMarkerOnlyOwner`, `whoseRowShownOnEveryTab`, `tapTargetsAtLeast48dp`. `NoticeTest` covers the notice strip priority. `TrendTest`: `axisCases`, `axisSingleValue`, `axisWideSpread`, `avg7BreaksAfterGap`, `monthGroupsAcrossYear`. `TrendChartViewTest`: `contentDescriptionPerson`, `emptyRangeDescription`, `scrubReportsNearestIndex`, `plotStartsAfterLabelGutter`. `DbTest`: `readingsForRange`, `historyIncludesUnassigned`, `monthsUseLocalZone`. |
 | US-10 | I compare both people on one graph. | `HomeTest`: `compareHidesDay`, `compareSummaryLines`, `compareNoDataLine`. `TrendTest`: `compareBaselineUsesEarlierPoints`, `compareSeriesUsesLocalDays`, `summaryWording`. |
 | US-11 | I manage people and appearance in Settings. | `SettingsTest`: `addPersonRunsBackfill`, `addHiddenAtTwo`. `TrendTest.initialsRule`. `DbTest`: `updatePersonPersists`, `personOrder`, `backfillOnlyNewPerson`. |
 | US-12 | I can move a weigh-in to someone else from the row sheet. | `RowActionsTest`: `moveAwayFromOwnerRemovesFirst`, `moveToOwnerWrites`, `removeFailureKeepsRow`, `actingOnDeletedReadingIsNoOp`, `sheetAndDialogOpen`. |
@@ -35,6 +35,8 @@ Fitbit or Google Health cloud sync, an iPhone app, delivering the partner's data
 | US-15 | First launch asks for my name and weight. | Behaviour unchanged. Checked on the phone (design spec §10). |
 | US-16 | I use the scale alone, or with a second person. | `ModeTest`: `newInstallIsSolo`, `upgradeWithTwoPeopleIsDuo`, `soloAssignIgnoresHiddenPerson`, `soloHidesChipsAndCompare`, `soloFallsBackFromHiddenTab`, `switchToDuoWithoutSecondOpensAdd`, `switchToDuoRestoresAndBackfills`, `someoneElseLinkAddsAndSwitches`. |
 | US-17 | I choose Colourful, Calm or Dark. | `ThemeTest`: `defaultIsColourful`, `roundTrip`, `tokensPerTheme`. `SettingsTest`: `themeChoiceSaved`, `themeChangeKeepsTabAndRange`. |
+| US-18 | I can download all weigh-ins as a CSV. | `CsvExportTest.*` (header and order, unassigned and hidden, name quoting, local time). `SettingsTest.dataRowExists`. |
+| US-19 | The blob shows up at empty states and milestones, never for weight changes. | `HomeTest`: `emptyRangeShowsSearchSticker`, `dayWithoutTodayShowsRun`. `RowActionsTest.deleteDialogHasPeek`. `LiveUpdateTest.firstWeighInMessage`. |
 
 ## Decisions
 
@@ -63,3 +65,4 @@ Fitbit or Google Health cloud sync, an iPhone app, delivering the partner's data
 4. Later fitness apps reading the Blob-log database or Health Connect.
 5. Tag weigh-ins with eating and behaviour notes and look for trends.
 6. Goal weights.
+7. Restore weigh-ins from a CSV.

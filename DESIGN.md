@@ -95,7 +95,7 @@ Intentional exceptions: the "Whose?" row sits **−1** above its slot so it cove
 
 - **Person chips:** 40 tall, fully rounded and equal width, followed by a 40 × 40 round ⚙. Selected uses the gradient with `text`; unselected uses `surface-grey` / `on-grey`. The third chip is **Compare**.
 - **Range pills:** a full-width `surface-grey` track with no inner padding. Each segment is 40 tall, and the selected one is `select` with `text`. Compare has no Day.
-- **Month chips:** 40 tall with 16 side padding. Only months with weigh-ins are shown, newest on the right. The first chip and every January chip show the year ("Aug 2026", "Jan 2027").
+- **Month chips:** 40 tall with 16 side padding. Only months with weigh-ins are shown, newest on the right. Chips show the month only ("Aug"). Each year's group starts with a year label (12 `text-muted`, 8 side margins), and a 1 × 24 `divider` hairline sits between years.
 - **Headline:** the 28 bold weight, then a two-line 12 label (person's name, then "today · 7-day avg …"). It pins to the top while scrolling and **only gets a shadow while pinned**. While you press and slide the graph, it shows the point under your finger.
 - **Graph:** dots are `owner-dot` (r 3), the 7-day average is `owner-line` (2.5 stroke). On Compare, the second person's line is `second-line`. The axis fits the data: 3 gridlines on half-kilo values, with "kg" on the top label. Year view labels months. Pressing and sliding shows a dashed guide and a ring. There's no floating bubble.
 - **Top notice strip:** above the person chips, flush with the top and side edges of the screen, square corners, `notice` background, 8 top/bottom and 16 side padding, a sticker at 28, one line of 14 text, and `›` in `warn-text`. One notice at a time (priority in the design doc). It's used for "Whose?" and for Bluetooth and Health Connect problems, each with its own sticker. No border, no rounding: it sits outside the content, so it never reads as another pill.
@@ -105,18 +105,24 @@ Intentional exceptions: the "Whose?" row sits **−1** above its slot so it cove
 
 ## Stickers
 
-Cut from the blob sticker sheet. They only appear when something is empty or needs attention, never on every row:
+Cut from the blob sticker sheet. They only appear when something is empty, needs attention, or marks an action or a milestone, never on every row. **The blob never reacts to weight going up or down.**
 
 | Sticker | Where |
 |---|---|
 | question | the "Whose?" banner and row |
-| peek | an empty month |
+| peek | an empty month, and above the delete dialog title |
 | scale | first run, and the "Saved" toast |
 | wave | setup, and the People intro |
 | bluetooth | Bluetooth off |
 | heart | Health Connect not connected |
 | sleep | listening failed |
-| search | spare |
+| search | an empty graph range |
+| run | Day with no weigh-in yet today |
+| cheer | a person's first weigh-in message |
+| notebook | the Settings Data row, and the "Saved <file>" message |
+| love | unused |
+
+Sizes: 24 in rows, 28 in the notice strip, 32 beside headings, 36 in messages, 40 in the Data row, 48 in empty states, 56 in dialogs. Every sticker has a 10 px transparent margin.
 
 ## Decided layout options kept for reference
 

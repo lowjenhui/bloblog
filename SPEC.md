@@ -6,9 +6,9 @@ Source of truth for behaviour. PRD.md holds goals, stories and decisions.
 
 A sideloaded Android app (Kotlin) on the owner's phone. It catches weigh-ins from the Yolanda "feelfit" bathroom scale in the background, decides whether each one is the owner's or their partner's, stores every reading in its own database, and writes the owner's weight to Health Connect. Nothing goes to the cloud. Fitbit is out of scope.
 
-## Build status (v0.3)
+## Build status (v0.3.1)
 
-Done in v0.3: the redesigned Home (person view with trend graph and History, Compare, Settings with People and Appearance, row sheet, delete confirmation, snackbars, live updates), three themes, Just me / Two people modes, and rules 2–7 with the new rule 3. The owner is set up first; the second person is added in Settings, and their readings stay in Blob-log only. Not done: scale pairing, and delivering the second person's data anywhere else (PRD D-11). Still to do: the on-phone checks in the design spec §10 (scrolling with the pinned headline, press-and-slide, swipe-to-delete, a live snackbar, adding Sam Lee with backfill, that Health Connect never receives the second person's data).
+Done in v0.3.1: blob moments (empty-range and Day stickers, a peek on the delete dialog, a cheer on a first weigh-in), a CSV download of all weigh-ins in Settings → Data, and year dividers in the History month chips. Done in v0.3: the redesigned Home (person view with trend graph and History, Compare, Settings with People and Appearance, row sheet, delete confirmation, snackbars, live updates), three themes, Just me / Two people modes, and rules 2–7 with the new rule 3. The owner is set up first; the second person is added in Settings, and their readings stay in Blob-log only. Not done: scale pairing, and delivering the second person's data anywhere else (PRD D-11). Still to do: the on-phone checks in the design spec §10 (scrolling with the pinned headline, press-and-slide, swipe-to-delete, a live snackbar, adding Sam Lee with backfill, that Health Connect never receives the second person's data).
 
 ## Scale protocol (observed 2026-11-22)
 
@@ -77,7 +77,7 @@ Top to bottom, scrolling as one page:
 4. **Range pills:** `Day` `Week` `Month` `3M` `Year`. Default `Month`. The choice is remembered per app session (not saved).
 5. **Graph** (Graph rules below), then the legend: `● weigh-ins  ━ 7-day average · press and slide: the number above follows your finger`. On Day: `● weigh-ins · press and slide: the number above follows your finger`.
 6. **History:** the title `History`, with the count on the right, e.g. `19 weigh-ins in Nov` (`1 weigh-in in Nov` for one).
-7. **Month chips:** months that have weigh-ins for this person, or unassigned ones. Newest on the right and scrolled into view on open. The first chip and every January chip show the year. Default: the newest month.
+7. **Month chips:** months that have weigh-ins for this person, or unassigned ones. Newest on the right and scrolled into view on open. Chips show the month only (`Aug`). Before each year's group of chips is a year label (`2026`), and a hairline divider separates one year from the next. Default: the newest month.
 8. **Rows** for the selected month, newest first:
    - Assigned row: `Wed 25 Nov · 07:15`, with `65.70 kg` on the right. The owner's rows not yet in Health Connect add `· not sent yet` in `warn-text`.
    - Unassigned row (shown on every tab, in its month): a full-bleed `notice` background with square corners, the question sticker, `Mon 23 Nov · 09:12`, and `81.20 kg · Whose?`.
@@ -100,7 +100,7 @@ Top to bottom, scrolling as one page:
 
 ### Settings (from ⚙)
 
-The title is `Settings`. Two sections, **People** then **Appearance**.
+The title is `Settings`. Three sections, **People**, **Appearance** then **Data**.
 
 **People**
 - `Who weighs in?` with a segmented control `Just me` | `Two people` at the top (see Modes).
@@ -124,6 +124,12 @@ The title is `Settings`. Two sections, **People** then **Appearance**.
 - Choosing a row applies the theme straight away and saves it.
 - Note: `Each person's colour is also their line on the Compare tab. Only the person marked (Me) is sent to Health Connect.`
 
+**Data**
+- One row: the notebook sticker, `Download weigh-ins (CSV)`, and the caption `Everyone's weigh-ins, one row each.`
+- Tapping it opens the system Save-to picker with the file name `blob-log-<yyyy-MM-dd>.csv` (today's date, e.g. `blob-log-2026-11-26.csv`).
+- The file has the header `date,time,weight_kg,person,in_health_connect`, then one row per weigh-in, oldest first, for everyone including hidden and unassigned ones. `date` is `yyyy-MM-dd` and `time` is `HH:mm`, both local. `weight_kg` has 2 decimals. `person` is the name, empty if unassigned. `in_health_connect` is `yes` or `no`. Names with a comma, quote or newline are quoted.
+- After saving: the notebook sticker plus `Saved blob-log-2026-11-26.csv`. If it fails: `Couldn't save the file. Try again.`
+
 ### Row sheet (tap a row, or tap the notice strip)
 
 - A drag handle at the top. Header: the sticker (question for unassigned), the weight, and `Mon 23 Nov · 09:12 · not assigned`, or the person's name if assigned.
@@ -134,13 +140,15 @@ The title is `Settings`. Two sections, **People** then **Appearance**.
 
 ### Delete confirmation
 
-A dialog titled `Delete this weigh-in?`, with the body `81.20 kg on Mon 23 Nov at 09:12. If it was sent to Health Connect, it's removed there too. This can't be undone.` and the buttons `Cancel` / `Delete`. Deleting removes the Health Connect record first if it was written; if that fails, the same message shows and the row stays.
+A dialog with the peek sticker above the title `Delete this weigh-in?`, with the body `81.20 kg on Mon 23 Nov at 09:12. If it was sent to Health Connect, it's removed there too. This can't be undone.` and the buttons `Cancel` / `Delete`. Deleting removes the Health Connect record first if it was written; if that fails, the same message shows and the row stays.
 
 ### Messages (snackbars)
 
 - A new weigh-in saved while the app is open and assigned to a person: scale sticker plus `Saved 65.70 kg for Julia`, about 3 s. None for unassigned ones; the notice strip appears instead.
+- A person's first ever weigh-in, saved while the app is open: the cheer sticker plus `Your first weigh-in!` for the owner, `Sam Lee's first weigh-in!` for others, instead of `Saved …`.
 - `Matched N earlier weigh-ins to Sam Lee`
 - `Couldn't update Health Connect. Try again.`
+- `Saved blob-log-2026-11-26.csv` (notebook sticker) and `Couldn't save the file. Try again.`, from the CSV download.
 
 ### Setup (first launch)
 
@@ -162,7 +170,7 @@ A single non-cancelable dialog for the phone owner, with the wave sticker, follo
 - **Y axis:** `lo` = the half-kilo at or below (min − 0.3); `step` = the smallest half-kilo ≥ ((max + 0.3) − lo) / 2, at least 0.5; gridlines at lo, lo + step and lo + 2·step, labelled with one decimal, with ` kg` on the top label only. Compare uses the same rule on the changes (all values and 0), with `+`/`−` signs.
 - **X axis:** Day, Week, Month and 3M get three labels (start, middle, end). Day: `00:00`, `12:00`, `now`. Week, Month, 3M: dates like `27 Oct`. Year gets five month labels, one per quarter plus the end.
 - **Press and slide:** the readout snaps to the nearest weigh-in by time (person view) or the nearest day (Compare), with a dashed vertical guide and a ring on the line. The page doesn't scroll while sliding.
-- **Empty range:** no line, the axis, and the text `No weigh-ins in this range` centred.
+- **Empty range:** no line, the axis, and the search sticker above the text `No weigh-ins in this range`, centred. On Day, the run sticker above `No weigh-in yet today` instead.
 - **Accessibility:** content description, e.g. `Weight trend, month. 19 weigh-ins from 65.0 to 66.8 kg. 7-day average now 65.58 kg.` Tappable elements are at least 48 dp.
 
 ### Other screens

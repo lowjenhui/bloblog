@@ -10,8 +10,8 @@ android {
         applicationId = "app.bloblog"
         minSdk = 31 // Android 12: BLUETOOTH_SCAN without location
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.3"
+        versionCode = 4
+        versionName = "0.3.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
