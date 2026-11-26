@@ -91,8 +91,16 @@ class RowActions(
     /** [onKept] runs if the row stays (cancelled, or Health Connect failed). */
     fun confirmDelete(readingId: Long, onKept: () -> Unit = {}) {
         val r = Db(a).reading(readingId) ?: return onKept()
+        val title = LinearLayout(a).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(a.dp(24), a.dp(24), a.dp(24), 0)
+            addView(ImageView(a).apply {
+                setImageResource(R.drawable.blob_peek); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }, LinearLayout.LayoutParams(a.dp(56), a.dp(56)))
+            addView(TextView(a, null, 0, com.google.android.material.R.style.MaterialAlertDialog_Material3_Title_Text).apply { text = "Delete this weigh-in?" })
+        }
         val dialog = MaterialAlertDialogBuilder(a)
-            .setTitle("Delete this weigh-in?")
+            .setCustomTitle(title)
             .setMessage("${kg(r.weightCentiKg)} on ${whenFmt.format(Date(r.takenAt)).replace(" · ", " at ")}. If it was sent to Health Connect, it's removed there too. This can't be undone.")
             .setNegativeButton("Cancel") { _, _ -> onKept() }
             .setPositiveButton("Delete") { _, _ -> a.lifecycleScope.launch { if (!deleteReading(readingId)) onKept() } }
@@ -123,9 +131,10 @@ class RowActions(
     }
 
     fun showSaved(name: String, centi: Int) = toast("Saved ${kg(centi)} for $name")
+    fun showFirst(p: Person) = toast("${if (p.isMe) "Your" else "${p.name}'s"} first weigh-in!", R.drawable.blob_cheer)
     fun showMatched(count: Int, name: String) = toast("Matched $count earlier weigh-in${if (count == 1) "" else "s"} to $name")
 
-    private fun hcFailed(): Boolean { toast("Couldn't update Health Connect. Try again.", sticker = false); return false }
+    private fun hcFailed(): Boolean { toast("Couldn't update Health Connect. Try again.", sticker = null); return false }
 
     private fun done(readingId: Long): Boolean {
         Notifications.cancel(a, readingId)
@@ -133,15 +142,15 @@ class RowActions(
         return true
     }
 
-    private fun toast(msg: String, sticker: Boolean = true) {
+    private fun toast(msg: String, sticker: Int? = R.drawable.blob_scale) {
         val bar = Snackbar.make(a.findViewById(android.R.id.content), msg, 3000)
         bar.view.background = GradientDrawable().apply {
             setColor(a.token(R.attr.bl_toast)); setStroke(a.dp(1), a.token(R.attr.bl_toastStroke)); cornerRadius = a.dp(16).toFloat()
         }
         bar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text).apply {
             setTextColor(a.token(R.attr.bl_onToast))
-            if (sticker) {
-                val d = a.getDrawable(R.drawable.blob_scale)!!.also { it.setBounds(0, 0, a.dp(36), a.dp(36)) }
+            if (sticker != null) {
+                val d = a.getDrawable(sticker)!!.also { it.setBounds(0, 0, a.dp(36), a.dp(36)) }
                 setCompoundDrawablesRelative(d, null, null, null)
                 compoundDrawablePadding = a.dp(8)
             }

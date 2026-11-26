@@ -24,6 +24,7 @@ class TrendChartView(context: Context, attrs: AttributeSet? = null) : View(conte
 
     // person mode
     private var pts = emptyList<Pt>()
+    val hasPoints get() = pts.isNotEmpty() // after trimming to the range
     private var range = Range.MONTH
     private var start = 0L
     private var end = 1L
@@ -129,10 +130,7 @@ class TrendChartView(context: Context, attrs: AttributeSet? = null) : View(conte
     }
 
     private fun drawPerson(c: Canvas) {
-        if (pts.isEmpty()) {
-            text.textAlign = Paint.Align.CENTER; text.color = context.token(R.attr.bl_textMuted)
-            c.drawText("No weigh-ins in this range", width / 2f, (top + bottom) / 2, text); return
-        }
+        if (pts.isEmpty()) return // the empty-state sticker and text are views over the chart (HomeAdapter)
         paint.style = Paint.Style.STROKE; paint.strokeWidth = 2.5f * dp; paint.color = context.token(lineAttr)
         segs.forEach { seg ->
             val p = Path()

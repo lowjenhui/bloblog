@@ -16,6 +16,8 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.Shadows.shadowOf
+import android.widget.ImageView
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -73,6 +75,30 @@ class HomeTest {
         assertTrue(listTexts(a).contains("81.20 kg · Whose?"))
         a.selectTab(second.id); layOut(a)
         assertTrue(listTexts(a).contains("81.20 kg · Whose?"))
+    }
+
+    private fun stickers(v: View, out: MutableList<Int> = mutableListOf()): List<Int> {
+        if (v is ImageView && v.visibility == View.VISIBLE) out.add(shadowOf(v.drawable).createdFromResId)
+        if (v is ViewGroup) for (i in 0 until v.childCount) stickers(v.getChildAt(i), out)
+        return out
+    }
+
+    @Test fun emptyRangeShowsSearchSticker() {
+        val p = db().me()!!.id
+        add(p, now - 60 * day, 6500) // outside the month range, so the month chart is empty
+        val a = home()
+        assertTrue(listTexts(a).contains("No weigh-ins in this range"))
+        assertTrue(stickers(a.findViewById(R.id.list)).contains(R.drawable.blob_search))
+    }
+
+    @Test fun dayWithoutTodayShowsRun() {
+        val p = db().me()!!.id
+        add(p, now - 3 * day, 6500)
+        val a = home()
+        a.range = Range.DAY; a.selectTab(p); layOut(a)
+        assertTrue(listTexts(a).contains("No weigh-in yet today"))
+        assertFalse(listTexts(a).contains("No weigh-ins in this range"))
+        assertTrue(stickers(a.findViewById(R.id.list)).contains(R.drawable.blob_run))
     }
 
     @Test fun rangeDefaultsToMonth() = assertEquals(Range.MONTH, home().range)

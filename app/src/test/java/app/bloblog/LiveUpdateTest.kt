@@ -46,7 +46,9 @@ class LiveUpdateTest {
 
     @Test fun savedBroadcastRefreshesAndShowsSnackbar() {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
-        send(c, seed(Db(context).people().first().id))
+        val julia = Db(context).people().first().id
+        seed(julia)
+        send(c, seed(julia))
         assertEquals("Saved 65.70 kg for Julia", snackbarText(c.get().findViewById(android.R.id.content)))
     }
 
@@ -54,5 +56,21 @@ class LiveUpdateTest {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
         send(c, seed(null))
         assertNull(snackbarText(c.get().findViewById(android.R.id.content)))
+    }
+
+    @Test fun firstWeighInMessage() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup()
+        send(c, seed(Db(context).people().first().id))
+        assertEquals("Your first weigh-in!", snackbarText(c.get().findViewById(android.R.id.content)))
+        send(c, seed(Db(context).people().last().id))
+        assertEquals("Sam Lee's first weigh-in!", snackbarText(c.get().findViewById(android.R.id.content)))
+    }
+
+    @Test fun laterWeighInSavedMessage() {
+        val c = Robolectric.buildActivity(MainActivity::class.java).setup()
+        val julia = Db(context).people().first().id
+        seed(julia)
+        send(c, seed(julia))
+        assertEquals("Saved 65.70 kg for Julia", snackbarText(c.get().findViewById(android.R.id.content)))
     }
 }

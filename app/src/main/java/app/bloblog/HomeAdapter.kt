@@ -145,7 +145,19 @@ class HomeAdapter(
             showPerson(g.pts, g.range, g.person.lineAttr(), g.person.dotAttr(), g.nowMs, g.startCenti)
             onScrub = this@HomeAdapter.onScrub
         }
-        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(4); marginStart = c.dp(12); marginEnd = c.dp(12) })
+        val frame = FrameLayout(c).apply { addView(chart, FrameLayout.LayoutParams(-1, -1)) }
+        if (!chart.hasPoints) {
+            val day = g.range == Range.DAY
+            frame.addView(vertical(c).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                addView(ImageView(c).apply {
+                    setImageResource(if (day) R.drawable.blob_run else R.drawable.blob_search)
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                }, LinearLayout.LayoutParams(c.dp(48), c.dp(48)))
+                addView(text(c, if (day) "No weigh-in yet today" else "No weigh-ins in this range", 12f, R.attr.bl_textMuted))
+            }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
+        }
+        addView(frame, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(4); marginStart = c.dp(12); marginEnd = c.dp(12) })
         val tail = " · press and slide: the number above follows your finger"
         val legend = if (g.range == Range.DAY) "● weigh-ins$tail" else "● weigh-ins  ━ 7-day average$tail"
         val span = SpannableString(legend).apply {

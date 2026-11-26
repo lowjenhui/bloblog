@@ -101,6 +101,17 @@ class RowActionsTest {
         assertNotNull(org.robolectric.shadows.ShadowDialog.getLatestDialog())
     }
 
+    @Test fun deleteDialogHasPeek() {
+        val id = add(julia, true)
+        actions.confirmDelete(id)
+        val root = org.robolectric.shadows.ShadowDialog.getLatestDialog().window!!.decorView
+        fun walk(v: android.view.View, f: (android.view.View) -> Unit) { f(v); if (v is android.view.ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i), f) }
+        val ids = mutableListOf<Int>(); val texts = mutableListOf<String>()
+        walk(root) { if (it is android.widget.ImageView && it.drawable != null) ids += org.robolectric.Shadows.shadowOf(it.drawable).createdFromResId; if (it is android.widget.TextView) texts += it.text.toString() }
+        assertTrue(ids.contains(R.drawable.blob_peek))
+        assertTrue(texts.contains("Delete this weigh-in?"))
+    }
+
     @Test fun readingMovedAwayIsNotWrittenBySyncPending() = runBlocking {
         val a = add(julia, false, 1_700_000_002_000L); val b = add(julia, false, 1_700_000_001_000L)
         val gate = kotlinx.coroutines.CompletableDeferred<Unit>(); fake.gate = gate

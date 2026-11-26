@@ -104,8 +104,8 @@ class MainActivity : ComponentActivity() {
             render()
             val db = Db(this@MainActivity)
             val r = db.reading(intent.getLongExtra("reading_id", -1)) ?: return
-            val name = db.people().firstOrNull { it.id == r.personId }?.name ?: return // unassigned: no message (spec §5.6)
-            rows.showSaved(name, r.weightCentiKg)
+            val p = db.people().firstOrNull { it.id == r.personId } ?: return // unassigned: no message (spec §5.6)
+            if (db.readingsFor(p.id, 0, Long.MAX_VALUE).size == 1) rows.showFirst(p) else rows.showSaved(p.name, r.weightCentiKg)
         }
     }
 
