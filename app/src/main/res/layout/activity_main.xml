@@ -70,7 +70,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:paddingHorizontal="16dp"
-                android:paddingTop="16dp" />
+                android:paddingTop="12dp" /> <!-- 16 visual: chips carry a 4dp inset -->
         </LinearLayout>
 
         <LinearLayout
@@ -79,8 +79,8 @@
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingHorizontal="16dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="16dp">
+            android:paddingTop="20dp"
+            android:paddingBottom="12dp"> <!-- 24/16 visual around 4dp-inset chips and pills -->
 
             <TextView
                 android:id="@+id/headlineWeight"

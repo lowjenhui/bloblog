@@ -38,6 +38,7 @@ sealed interface HomeItem {
 fun Context.dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
 /** Fills a view with a theme attribute that is a colour (rounded to [radiusDp]) or a drawable (the gradient). */
+// Gaps next to inset controls are 4dp smaller than DESIGN.md says, because the inset already draws 4dp of space.
 fun View.fill(attr: Int, radiusDp: Int = 0, inset: Boolean = false) {
     val tv = TypedValue()
     context.theme.resolveAttribute(attr, tv, true)
@@ -110,7 +111,7 @@ class HomeAdapter(
         setPadding(c.dp(16), 0, c.dp(16), c.dp(32))
         val fmt = { f: String -> DateTimeFormatter.ofPattern(f, Locale.ENGLISH) }
         val from = java.time.Instant.ofEpochMilli(g.fromMs).atZone(g.zone)
-        addView(text(c, "Change since ${fmt("d MMM").format(from)} · 7-day averages", 12f, R.attr.bl_textMuted).apply { setPadding(0, 0, 0, c.dp(8)) })
+        addView(text(c, "Change since ${fmt("d MMM").format(from)} · 7-day averages", 12f, R.attr.bl_textMuted).apply { setPadding(0, 0, 0, c.dp(4)) })
         addView(pills(c, listOf(Range.WEEK to "Week", Range.MONTH to "Month", Range.M3 to "3M", Range.YEAR to "Year"), g.range), LinearLayout.LayoutParams(-1, -2))
         val days = g.series[0].map { it.first }
         val summary = text(c, "", 14f, R.attr.bl_text).apply { setPadding(c.dp(12), c.dp(8), c.dp(12), 0) }
@@ -132,7 +133,7 @@ class HomeAdapter(
             showCompare(g.people.zip(g.series) { p, s -> p.name to s }, g.people.map { it.lineAttr() })
             onScrub = { show(it); this@HomeAdapter.onScrub(it) }
         }
-        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(8); marginStart = c.dp(12); marginEnd = c.dp(12) })
+        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(4); marginStart = c.dp(12); marginEnd = c.dp(12) })
         addView(summary)
     }
 
@@ -143,7 +144,7 @@ class HomeAdapter(
             showPerson(g.pts, g.range, g.person.lineAttr(), g.person.dotAttr(), g.nowMs, g.startCenti)
             onScrub = this@HomeAdapter.onScrub
         }
-        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(8); marginStart = c.dp(12); marginEnd = c.dp(12) })
+        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(4); marginStart = c.dp(12); marginEnd = c.dp(12) })
         val tail = " · press and slide: the number above follows your finger"
         val legend = if (g.range == Range.DAY) "● weigh-ins$tail" else "● weigh-ins  ━ 7-day average$tail"
         val span = SpannableString(legend).apply {
@@ -156,7 +157,7 @@ class HomeAdapter(
 
     private fun historyHeader(c: Context, h: HomeItem.HistoryHeader) = LinearLayout(c).apply {
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(c.dp(16), 0, c.dp(16), c.dp(8))
+        setPadding(c.dp(16), 0, c.dp(16), c.dp(4))
         addView(text(c, "History", 16f, R.attr.bl_text, bold = true), LinearLayout.LayoutParams(0, -2, 1f))
         val mon = h.month.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH)
         addView(text(c, "${h.count} weigh-in${if (h.count == 1) "" else "s"} in $mon", 12f, R.attr.bl_textMuted))
@@ -164,7 +165,7 @@ class HomeAdapter(
 
     private fun months(c: Context, m: HomeItem.Months) = HorizontalScrollView(c).apply {
         isHorizontalScrollBarEnabled = false
-        val row = LinearLayout(c).apply { setPadding(c.dp(16), 0, c.dp(16), c.dp(8)) }
+        val row = LinearLayout(c).apply { setPadding(c.dp(16), 0, c.dp(16), c.dp(4)) }
         var selected: View? = null
         m.months.zip(monthChipLabels(m.months)).forEach { (month, label) ->
             val sel = month == m.selected
