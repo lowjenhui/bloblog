@@ -180,15 +180,23 @@ class HomeAdapter(
         isHorizontalScrollBarEnabled = false
         val row = LinearLayout(c).apply { setPadding(c.dp(16), 0, c.dp(16), c.dp(4)) }
         var selected: View? = null
-        m.months.zip(monthChipLabels(m.months)).forEach { (month, label) ->
-            val sel = month == m.selected
-            row.addView(text(c, label, 12f, if (sel) R.attr.bl_onSelect else R.attr.bl_onGrey).apply {
-                gravity = Gravity.CENTER
-                setPadding(c.dp(16), 0, c.dp(16), 0)
-                fill(if (sel) R.attr.bl_select else R.attr.bl_surfaceGrey, 20, inset = true)
-                setOnClickListener { onMonth(month) }
-                if (sel) selected = this
-            }, LinearLayout.LayoutParams(-2, c.dp(48)).apply { marginEnd = c.dp(8) })
+        monthChipGroups(m.months).forEachIndexed { i, (year, group) ->
+            if (i > 0) row.addView(View(c).apply { setBackgroundColor(c.token(R.attr.bl_divider)) },
+                LinearLayout.LayoutParams(c.dp(1), c.dp(24)).apply { gravity = Gravity.CENTER_VERTICAL; marginStart = c.dp(8); marginEnd = c.dp(8) })
+            row.addView(text(c, year.toString(), 12f, R.attr.bl_textMuted).apply {
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES; contentDescription = year.toString()
+            }, LinearLayout.LayoutParams(-2, -2).apply { gravity = Gravity.CENTER_VERTICAL; marginStart = c.dp(8); marginEnd = c.dp(8) })
+            group.forEach { month ->
+                val sel = month == m.selected
+                val name = month.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH)
+                row.addView(text(c, name, 12f, if (sel) R.attr.bl_onSelect else R.attr.bl_onGrey).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(c.dp(16), 0, c.dp(16), 0)
+                    fill(if (sel) R.attr.bl_select else R.attr.bl_surfaceGrey, 20, inset = true)
+                    setOnClickListener { onMonth(month) }
+                    if (sel) selected = this
+                }, LinearLayout.LayoutParams(-2, c.dp(48)).apply { marginEnd = c.dp(8) })
+            }
         }
         addView(row)
         post { scrollTo((selected?.left ?: 0) - c.dp(16), 0) }

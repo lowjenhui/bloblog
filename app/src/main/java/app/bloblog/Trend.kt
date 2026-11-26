@@ -69,7 +69,5 @@ fun initials(name: String): String {
     return s.uppercase(Locale.ROOT)
 }
 
-fun monthChipLabels(months: List<YearMonth>): List<String> = months.mapIndexed { i, m ->
-    val name = m.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH)
-    if (i == 0 || m.monthValue == 1) "$name ${m.year}" else name
-}
+fun monthChipGroups(months: List<YearMonth>): List<Pair<Int, List<YearMonth>>> =
+    months.groupBy { it.year }.toList()

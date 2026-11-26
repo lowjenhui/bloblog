@@ -145,6 +145,18 @@ class HomeTest {
         assertTrue(listTexts(home()).any { it == "1 weigh-in in $month" })
     }
 
+    private fun thisMonth() = java.time.Instant.ofEpochMilli(now - hour).atZone(ZoneId.systemDefault()).month
+        .getDisplayName(java.time.format.TextStyle.SHORT, Locale.ENGLISH)
+
+    @Test fun chipsShowMonthOnly() {
+        val p = db().me()!!.id
+        add(p, now - hour, 6500); add(p, now - 400 * day, 6600)
+        val t = listTexts(home())
+        val y = java.time.Instant.ofEpochMilli(now - hour).atZone(ZoneId.systemDefault()).year
+        assertTrue(t.containsAll(listOf((y - 1).toString(), y.toString(), thisMonth())))
+        assertFalse(t.any { it.matches(Regex("[A-Z][a-z]{2} \\d{4}")) })
+    }
+
     @Test fun tapTargetsAtLeast48dp() {
         val p = db().me()!!.id
         add(p, now - hour, 6500)
@@ -153,7 +165,7 @@ class HomeTest {
         val chip = a.findViewById<ViewGroup>(R.id.chips).getChildAt(0)
         val button = a.findViewById<View>(R.id.stripButton)
         val pill = texts(a.findViewById(R.id.list)).first { it.text == "Week" }
-        val monthChip = texts(a.findViewById(R.id.list)).first { it.text.toString().matches(Regex("[A-Z][a-z]{2} \\d{4}")) }
+        val monthChip = texts(a.findViewById(R.id.list)).first { it.text.toString() == thisMonth() }
         assertTrue(chip.layoutParams.height >= min)
         assertTrue(button.layoutParams.height >= min)
         assertTrue(pill.height >= min)

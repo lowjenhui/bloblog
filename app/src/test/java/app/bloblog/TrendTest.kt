@@ -66,8 +66,8 @@ class TrendTest {
         assertEquals("JS", initials("julia stone"))
     }
 
-    @Test fun monthLabelsAcrossYear() {
+    @Test fun monthGroupsAcrossYear() {
         val m = listOf(YearMonth.of(2026, 11), YearMonth.of(2026, 12), YearMonth.of(2027, 1))
-        assertEquals(listOf("Nov 2026", "Dec", "Jan 2027"), monthChipLabels(m))
+        assertEquals(listOf(2026 to listOf(m[0], m[1]), 2027 to listOf(m[2])), monthChipGroups(m))
     }
 }
