@@ -30,7 +30,7 @@ class ModeTest {
     }
 
     private fun db() = Db(context)
-    private fun two() { db().addPerson("Julia", 6500, true); db().addPerson("Sam Lee", 5500, false) }
+    private fun two() { db().addPerson("Alex", 6500, true); db().addPerson("Sam Lee", 5500, false) }
     private fun views(v: View): List<View> = listOf(v) + ((v as? ViewGroup)?.let { g -> (0 until g.childCount).flatMap { views(g.getChildAt(it)) } } ?: emptyList())
     private fun text(root: View, t: String) = views(root).firstOrNull { (it as? TextView)?.text?.toString() == t && it.visibility == View.VISIBLE }
     private fun settings() = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
@@ -42,7 +42,7 @@ class ModeTest {
 
     @Test fun newInstallIsSolo() {
         assertEquals(PeopleMode.SOLO, ModePrefs.get(context, db()))
-        db().addPerson("Julia", 6500, true)
+        db().addPerson("Alex", 6500, true)
         assertEquals(PeopleMode.SOLO, ModePrefs.get(context, db()))
     }
 
@@ -56,7 +56,7 @@ class ModeTest {
         val jing = db().people().last().id
         assertEquals(jing, assign(5500, db().refs(0, PeopleMode.DUO)))
         assertNull(assign(5500, db().refs(0, PeopleMode.SOLO)))
-        assertEquals(listOf("Julia"), db().activePeople(PeopleMode.SOLO).map { it.name })
+        assertEquals(listOf("Alex"), db().activePeople(PeopleMode.SOLO).map { it.name })
     }
 
     @Test fun soloHidesChipsAndCompare() {
@@ -86,7 +86,7 @@ class ModeTest {
     }
 
     @Test fun switchToDuoWithoutSecondOpensAdd() {
-        db().addPerson("Julia", 6500, true)
+        db().addPerson("Alex", 6500, true)
         val a = settings()
         text(root(a), "Two people")!!.performClick()
         val d = ShadowDialog.getLatestDialog()
@@ -111,7 +111,7 @@ class ModeTest {
     }
 
     @Test fun someoneElseLinkAddsAndSwitches() {
-        db().addPerson("Julia", 6500, true)
+        db().addPerson("Alex", 6500, true)
         val id = unassigned(5500)
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         RowActions(a) {}.openRowSheet(id)

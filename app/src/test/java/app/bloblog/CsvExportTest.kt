@@ -29,15 +29,15 @@ class CsvExportTest {
     }
 
     @Test fun csvHeaderAndOrder() {
-        val db = Db(context); db.addPerson("Julia", 6500, true)
+        val db = Db(context); db.addPerson("Alex", 6500, true)
         add(1_700_000_100_000L, 6570, 1, true); add(1_700_000_000_000L, 6565, 1)
-        assertEquals(head + "2023-11-14,22:13,65.65,Julia,no\n2023-11-14,22:15,65.70,Julia,yes\n", weighInsCsv(Db(context), utc))
+        assertEquals(head + "2023-11-14,22:13,65.65,Alex,no\n2023-11-14,22:15,65.70,Alex,yes\n", weighInsCsv(Db(context), utc))
     }
 
     @Test fun csvUnassignedAndHidden() {
-        val db = Db(context); db.addPerson("Julia", 6500, true); db.addPerson("Wei", 7000, false)
+        val db = Db(context); db.addPerson("Alex", 6500, true); db.addPerson("Sam", 7000, false)
         add(1_700_000_000_000L, 5500, null); add(1_700_000_100_000L, 7000, 2)
-        assertEquals(head + "2023-11-14,22:13,55.00,,no\n2023-11-14,22:15,70.00,Wei,no\n", weighInsCsv(Db(context), utc))
+        assertEquals(head + "2023-11-14,22:13,55.00,,no\n2023-11-14,22:15,70.00,Sam,no\n", weighInsCsv(Db(context), utc))
     }
 
     @Test fun csvQuotesNames() {
@@ -47,8 +47,8 @@ class CsvExportTest {
     }
 
     @Test fun csvLocalTime() {
-        val db = Db(context); db.addPerson("Julia", 6500, true)
+        val db = Db(context); db.addPerson("Alex", 6500, true)
         add(1_700_000_000_000L, 6565, 1)
-        assertEquals(head + "2023-11-15,06:13,65.65,Julia,no\n", weighInsCsv(Db(context), ZoneId.of("Asia/Singapore")))
+        assertEquals(head + "2023-11-15,06:13,65.65,Alex,no\n", weighInsCsv(Db(context), ZoneId.of("Asia/Singapore")))
     }
 }

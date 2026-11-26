@@ -44,7 +44,7 @@ The owner described outcomes, not tooling, so A is the planner's call. It revers
 
 ## 5. Screens
 
-All text below is exact. "Julia" and "Sam Lee" stand for the people's names, and the weights are examples.
+All text below is exact. "Alex" and "Sam Lee" stand for the people's names, and the weights are examples.
 
 ### 5.1 Home: person view (first screen)
 
@@ -62,7 +62,7 @@ Top to bottom, scrolling as one page:
    5. Health Connect not connected, on the owner's tab only: `Health Connect isn't connected. Readings are saved here but not sent.` with the button `Connect` (heart sticker).
 
    If Health Connect isn't available on the phone at all, nothing shows here. Instead, the owner's row in Settings → People says `Health Connect isn't available on this phone` in place of `Sent to Health Connect`, so a permanent condition never blocks the "Whose?" notice.
-2. **Person chips:** `Julia` · `Sam Lee` · `Compare`, then ⚙ (opens Settings). The selected chip uses the gradient. Chips follow the order people were added; the owner is first. 16 below the strip.
+2. **Person chips:** `Alex` · `Sam Lee` · `Compare`, then ⚙ (opens Settings). The selected chip uses the gradient. Chips follow the order people were added; the owner is first. 16 below the strip.
 3. **Headline**, 24 below the chips and 16 above the range pills. It pins to the top while scrolling, with a shadow only while pinned:
    - Weight: the person's latest weigh-in, e.g. `65.70 kg`
    - Label line 1: the person's name
@@ -88,8 +88,8 @@ Top to bottom, scrolling as one page:
 - Range pills: `Week` `Month` `3M` `Year`. There's no Day. If Day was selected on a person tab, Compare opens on `Week`.
 - **Graph:** one line per person, with one point per day. A day's value is the person's 7-day average at the end of that day (the mean of their weigh-ins in the 7 days ending then). If they have no weigh-ins in those 7 days, that day is a gap and the line breaks. The **baseline** is the same 7-day average at the start of the range, using weigh-ins from before the window. If there's none, it's the first day in the range that has a value. Each point is plotted as its value minus the baseline. A dashed zero line. Each line is labelled with the name only, at its right end, in the person's colour with a white halo. The labels hide while sliding.
 - **Summary** under the graph, one line per person, 14 regular, name bold in their colour:
-  - resting: `Today`, then `Julia is at 65.58 kg, down 0.45 kg.` (`up` / `down`; `no change` when |change| < 0.05)
-  - sliding: the date (`Thu 19 Nov`), then `Julia was at 65.65 kg, down 0.38 kg.`
+  - resting: `Today`, then `Alex is at 65.58 kg, down 0.45 kg.` (`up` / `down`; `no change` when |change| < 0.05)
+  - sliding: the date (`Thu 19 Nov`), then `Alex was at 65.65 kg, down 0.38 kg.`
   - a person with no weigh-ins in the range: `Sam Lee has no weigh-ins in this range.` (no line drawn)
 - No headline, no History.
 
@@ -132,7 +132,7 @@ A dialog titled `Delete this weigh-in?`, with the body `81.20 kg on Mon 23 Nov a
 
 ### 5.6 Toasts
 
-- A new weigh-in saved while the app is open and assigned to a person: scale sticker plus `Saved 65.70 kg for Julia`, about 3 s. No toast for unassigned ones; the banner appears instead.
+- A new weigh-in saved while the app is open and assigned to a person: scale sticker plus `Saved 65.70 kg for Alex`, about 3 s. No toast for unassigned ones; the banner appears instead.
 - `Matched N earlier weigh-ins to Sam Lee` (§5.3).
 - `Couldn't update Health Connect. Try again.`
 

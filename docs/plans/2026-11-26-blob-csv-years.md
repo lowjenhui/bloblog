@@ -18,13 +18,13 @@
 3. **Delete confirmation:** a `peek` sticker (56) above the dialog title. The copy is unchanged.
 4. **First weigh-in:** when a live update brings a person's **first ever** assigned weigh-in, show the message with the `cheer` sticker: `Your first weigh-in!` for the `(Me)` person, `Sam Lee's first weigh-in!` for others (`<Name>'s first weigh-in!`), instead of `Saved …`.
 - **Not** a `wave` sticker beside `Appearance` (owner, 2026-11-26).
-- Tests: `emptyRangeShowsSearchSticker`, `dayWithoutTodayShowsRun` (text present), `deleteDialogHasPeek`, `firstWeighInMessage` (Me and other), `laterWeighInSavedMessage` (the second weigh-in still says `Saved 65.70 kg for Julia`).
+- Tests: `emptyRangeShowsSearchSticker`, `dayWithoutTodayShowsRun` (text present), `deleteDialogHasPeek`, `firstWeighInMessage` (Me and other), `laterWeighInSavedMessage` (the second weigh-in still says `Saved 65.70 kg for Alex`).
 
 ### Task B: CSV download
 **Files:** create `CsvExport.kt`; modify `SettingsActivity.kt`; test `CsvExportTest.kt`
 - `fun weighInsCsv(db: Db, zone: ZoneId): String`. Header: `date,time,weight_kg,person,in_health_connect`. One row per reading, **oldest first**, for everyone, including hidden and unassigned readings. `date` is `yyyy-MM-dd` and `time` is `HH:mm`, both local. `weight_kg` has 2 decimals with a `.` decimal point. `person` is the name (empty for unassigned). `in_health_connect` is `yes` or `no`. Names containing `,` `"` or a newline are quoted per RFC 4180. Lines end with `\n`.
 - Settings: a new last section **Data** (title 16 bold, with 32 above it). One 56-tall row: a `notebook` sticker (40), `Download weigh-ins (CSV)` (14), and the caption `Everyone's weigh-ins, one row each.` (12, muted). Tapping it launches `ActivityResultContracts.CreateDocument("text/csv")` with the name `blob-log-<yyyy-MM-dd>.csv`, then writes the string via `contentResolver.openOutputStream`. On success, show a message with the `notebook` sticker: `Saved blob-log-2026-11-26.csv`. On failure: `Couldn't save the file. Try again.`
-- Tests: `csvHeaderAndOrder`, `csvUnassignedAndHidden`, `csvQuotesNames` (`Stone, Julia` → `"Stone, Julia"`), `csvLocalTime` (Asia/Singapore).
+- Tests: `csvHeaderAndOrder`, `csvUnassignedAndHidden`, `csvQuotesNames` (`Stone, Alex` → `"Stone, Alex"`), `csvLocalTime` (Asia/Singapore).
 
 ### Task C: Year dividers in the month chips
 **Files:** `HomeAdapter.kt`, `Trend.kt` (replace `monthChipLabels`), `TrendTest`, `HomeTest`

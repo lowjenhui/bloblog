@@ -22,7 +22,7 @@ class LiveUpdateTest {
 
     @Before fun freshDb() {
         Db.resetForTests(); context.deleteDatabase("bloblog.db")
-        Db(context).apply { addPerson("Julia", 6500, true); addPerson("Sam Lee", 5500, false) }
+        Db(context).apply { addPerson("Alex", 6500, true); addPerson("Sam Lee", 5500, false) }
     }
 
     private fun seed(personId: Long?): Long = Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
@@ -38,10 +38,10 @@ class LiveUpdateTest {
 
     @Test fun savedBroadcastRefreshesAndShowsSnackbar() {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
-        val julia = Db(context).people().first().id
-        seed(julia)
-        send(c, seed(julia))
-        assertEquals("Saved 65.70 kg for Julia", c.get().rows.lastMessage)
+        val alex = Db(context).people().first().id
+        seed(alex)
+        send(c, seed(alex))
+        assertEquals("Saved 65.70 kg for Alex", c.get().rows.lastMessage)
     }
 
     @Test fun unassignedBroadcastNoSnackbar() {
@@ -60,9 +60,9 @@ class LiveUpdateTest {
 
     @Test fun laterWeighInSavedMessage() {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
-        val julia = Db(context).people().first().id
-        seed(julia)
-        send(c, seed(julia))
-        assertEquals("Saved 65.70 kg for Julia", c.get().rows.lastMessage)
+        val alex = Db(context).people().first().id
+        seed(alex)
+        send(c, seed(alex))
+        assertEquals("Saved 65.70 kg for Alex", c.get().rows.lastMessage)
     }
 }

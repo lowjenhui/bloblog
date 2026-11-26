@@ -35,7 +35,7 @@ class SettingsTest {
     private fun root(a: SettingsActivity) = a.findViewById<View>(android.R.id.content)
 
     @Test fun addPersonRunsBackfill() {
-        Db(context).addPerson("Julia", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
+        Db(context).addPerson("Alex", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
         Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
             put("taken_at", 1_700_000_000_000L); put("weight_centi", 5500); put("scale_id", "s"); put("raw_hex", "")
         })
@@ -52,20 +52,20 @@ class SettingsTest {
     }
 
     @Test fun addHiddenAtTwo() {
-        Db(context).addPerson("Julia", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
+        Db(context).addPerson("Alex", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
         assertNotNull(text(root(settings()), "+ Add person"))
         Db(context).addPerson("Sam Lee", 5500, false)
         assertNull(text(root(settings()), "+ Add person"))
     }
 
     @Test fun themeChoiceSaved() {
-        Db(context).addPerson("Julia", 6500, true)
+        Db(context).addPerson("Alex", 6500, true)
         (text(root(settings()), "Dark")!!.parent.parent as View).performClick()
         assertEquals(AppTheme.DARK, ThemePrefs.get(context))
     }
 
     @Test fun themeChangeKeepsTabAndRange() {
-        Db(context).addPerson("Julia", 6500, true); Db(context).addPerson("Sam Lee", 5500, false)
+        Db(context).addPerson("Alex", 6500, true); Db(context).addPerson("Sam Lee", 5500, false)
         val jing = Db(context).people().last().id
         val scenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
         scenario.onActivity { it.selectTab(jing); it.range = Range.YEAR }
@@ -80,7 +80,7 @@ class SettingsTest {
     }
 
     @Test fun peopleNoteSitsAboveAppearance() {
-        Db(context).addPerson("Julia", 6500, true)
+        Db(context).addPerson("Alex", 6500, true)
         val all = views(root(settings()))
         val note = all.indexOfFirst { (it as? TextView)?.text?.startsWith("Weigh-ins far from your weight") == true }
         val appearance = all.indexOfFirst { (it as? TextView)?.text?.toString() == "Appearance" }

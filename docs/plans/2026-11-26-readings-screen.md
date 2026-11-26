@@ -68,7 +68,7 @@
 - `fun avg7Segments(pts: List<Pt>): List<List<Pair<Long, Double>>>`: points sorted by time; the value at `t` is the mean kg of points in `(t−7d, t]`; a new segment starts when consecutive points are more than 7 days apart.
 - `data class Axis(val lo: Double, val mid: Double, val hi: Double)` and `fun axisFor(values: List<Double>, pad: Double = 0.3): Axis`. The rule is in spec §6: `lo = floor((min − pad)·2)/2`, `step = max(0.5, ceil(((max + pad) − lo)/2·2)/2)`.
 - `fun compareSeries(pts: List<Pt>, fromMs: Long, toMs: Long, zone: ZoneId): List<Pair<LocalDate, Double?>>`: one entry per local day in `[from, to]`. The value is the 7-day average at the end of that day minus the baseline, or null if there were no points in those 7 days. The baseline is the 7-day average at `fromMs` (using earlier points), else the first non-null day (spec §5.2).
-- `fun summaryLine(name: String, kg: Double?, changeKg: Double?, past: Boolean): String`. Exact copy from spec §5.2: `"Julia is at 65.58 kg, down 0.45 kg."` / `"was at"`; `"no change"` when |change| < 0.05; `"Sam Lee has no weigh-ins in this range."` when `kg == null`.
+- `fun summaryLine(name: String, kg: Double?, changeKg: Double?, past: Boolean): String`. Exact copy from spec §5.2: `"Alex is at 65.58 kg, down 0.45 kg."` / `"was at"`; `"no change"` when |change| < 0.05; `"Sam Lee has no weigh-ins in this range."` when `kg == null`.
 - `fun initials(name: String): String` (spec §5.3)
 - `fun monthChipLabels(months: List<YearMonth>): List<String>` (oldest → newest; the year on the first and on every January, e.g. `"Aug 2026"`, `"Sep"`, `"Jan 2027"`)
 
@@ -80,7 +80,7 @@
   - `compareBaselineUsesEarlierPoints`: a point 3 days before `from` sets the baseline, so the first day's value is not 0
   - `compareSeriesUsesLocalDays`: in `Asia/Singapore`, a point at 23:59 local on 31 Oct falls on 2026-10-31
   - `summaryWording`: down, up, no change (0.04), past tense, and no data, each with exact strings
-  - `initialsRule`: `"Sam Lee" → "SL"`, `"Julia" → "JU"`, `"julia stone" → "JS"`
+  - `initialsRule`: `"Sam Lee" → "SL"`, `"Alex" → "AL"`, `"alex stone" → "AS"`
   - `monthLabelsAcrossYear`: `[2026-11, 2026-12, 2027-01] → ["Nov 2026", "Dec", "Jan 2027"]`
 - [ ] **Step 2:** Run `--tests app.bloblog.TrendTest`. Expected: FAIL.
 - [ ] **Step 3:** Implement `Trend.kt` with the signatures above.
@@ -260,7 +260,7 @@
 - After a reading is saved and assigned, `ScanReceiver` sends `Intent("app.bloblog.READING_SAVED").setPackage(context.packageName).putExtra("reading_id", id)`.
 - `MainActivity` registers a receiver in `onStart` with `RECEIVER_NOT_EXPORTED`, and unregisters it in `onStop`. On receipt it refreshes the data and calls `showSaved` only if the reading has a person (spec §5.6).
 
-- [ ] **Step 1: Write the failing test** (Robolectric): `savedBroadcastRefreshesAndShowsSnackbar` (send the broadcast for a seeded assigned reading → the new row appears and the snackbar text is `Saved 65.70 kg for Julia`), and `unassignedBroadcastNoSnackbar`
+- [ ] **Step 1: Write the failing test** (Robolectric): `savedBroadcastRefreshesAndShowsSnackbar` (send the broadcast for a seeded assigned reading → the new row appears and the snackbar text is `Saved 65.70 kg for Alex`), and `unassignedBroadcastNoSnackbar`
 - [ ] **Step 2:** Run. Expected: FAIL.
 - [ ] **Step 3:** Implement.
 - [ ] **Step 4:** Run, then the full check.

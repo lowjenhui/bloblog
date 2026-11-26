@@ -32,7 +32,7 @@ class HomeTest {
 
     @Before fun freshDb() { Db.resetForTests(); context.deleteDatabase("bloblog.db") }
 
-    private fun db() = Db(context).also { if (it.people().isEmpty()) { it.addPerson("Julia", 6500, true); it.addPerson("Sam Lee", 5500, false) } }
+    private fun db() = Db(context).also { if (it.people().isEmpty()) { it.addPerson("Alex", 6500, true); it.addPerson("Sam Lee", 5500, false) } }
 
     private fun add(personId: Long?, at: Long, centi: Int, written: Boolean = true) {
         db().writableDatabase.insert("reading", null, ContentValues().apply {
@@ -67,12 +67,12 @@ class HomeTest {
         val edits = mutableListOf<android.widget.EditText>()
         fun walk(v: View) { if (v is android.widget.EditText) edits += v; if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i)) }
         walk(d.window!!.decorView)
-        edits.first { it.hint == "Name" }.setText("Julia")
+        edits.first { it.hint == "Name" }.setText("Alex")
         edits.first { it.hint == "Current weight (kg)" }.setText("66.3")
         d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
         val me = Db.get(context).people().single()
         assertTrue(me.isMe)
-        assertEquals("Julia", me.name)
+        assertEquals("Alex", me.name)
         assertEquals(6630, Db.get(context).startWeight(me.id))
     }
 
@@ -187,6 +187,16 @@ class HomeTest {
         assertTrue(monthChip.height >= min)
     }
 
+    @Test fun selectedPersonChipIsRounded() {
+        val p = db().me()!!.id
+        add(p, now - hour, 6500)
+        val a = home()
+        // Colourful's selected chip is a gradient drawable file; it must get the same 20 dp corners as solid chips.
+        val bg = a.findViewById<ViewGroup>(R.id.chips).getChildAt(0).background as android.graphics.drawable.InsetDrawable
+        val shape = bg.drawable as android.graphics.drawable.GradientDrawable
+        assertEquals(20 * a.resources.displayMetrics.density, shape.cornerRadius, 0.5f)
+    }
+
     @Test fun monthChipIsAPill() {
         val p = db().me()!!.id
         add(p, now - hour, 6500)
@@ -221,17 +231,17 @@ class HomeTest {
         val t = listTexts(compare())
         val from = java.time.Instant.ofEpochMilli(rangeStart(Range.MONTH, now, ZoneId.systemDefault())).atZone(ZoneId.systemDefault())
         assertTrue(t.contains("Change since ${DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH).format(from)} · 7-day averages"))
-        assertTrue(t.contains("Today\nJulia is at 65.00 kg, down 1.00 kg.\nSam Lee is at 55.40 kg, up 0.40 kg."))
+        assertTrue(t.contains("Today\nAlex is at 65.00 kg, down 1.00 kg.\nSam Lee is at 55.40 kg, up 0.40 kg."))
     }
 
     @Test fun compareNoDataLine() {
         val d = db(); add(d.me()!!.id, now - hour, 6500)
-        assertTrue(listTexts(compare()).contains("Today\nJulia is at 65.00 kg, no change.\nSam Lee has no weigh-ins in this range."))
+        assertTrue(listTexts(compare()).contains("Today\nAlex is at 65.00 kg, no change.\nSam Lee has no weigh-ins in this range."))
     }
 
     @Test fun compareNoWeighInsThatWeek() {
         val d = db(); val me = d.me()!!.id; val second = d.people()[1].id
         add(me, now - hour, 6500); add(second, now - 20 * day, 5500)
-        assertTrue(listTexts(compare()).contains("Today\nJulia is at 65.00 kg, no change.\nSam Lee has no weigh-ins that week."))
+        assertTrue(listTexts(compare()).contains("Today\nAlex is at 65.00 kg, no change.\nSam Lee has no weigh-ins that week."))
     }
 }

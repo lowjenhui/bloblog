@@ -37,7 +37,7 @@ class RowActionsTest {
 
     @Before fun setUp() {
         Db.resetForTests(); context.deleteDatabase("bloblog.db")
-        Db(context).apply { addPerson("Julia", 6500, true); addPerson("Sam Lee", 5500, false) }
+        Db(context).apply { addPerson("Alex", 6500, true); addPerson("Sam Lee", 5500, false) }
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         actions = RowActions(a, fake) { changed++ }
     }
@@ -47,11 +47,11 @@ class RowActionsTest {
         put("person_id", personId); put("hc_written", if (written) 1 else 0)
     })
 
-    private val julia get() = Db(context).people().first { it.isMe }.id
+    private val alex get() = Db(context).people().first { it.isMe }.id
     private val jing get() = Db(context).people().first { !it.isMe }.id
 
     @Test fun moveAwayFromOwnerRemovesFirst() = runBlocking {
-        val id = add(julia, true)
+        val id = add(alex, true)
         assertTrue(actions.moveReading(id, jing))
         assertEquals(listOf("remove"), fake.calls)
         assertEquals(jing, Db(context).reading(id)!!.personId)
@@ -60,15 +60,15 @@ class RowActionsTest {
 
     @Test fun moveToOwnerWrites() = runBlocking {
         val id = add(null, false)
-        assertTrue(actions.moveReading(id, julia))
+        assertTrue(actions.moveReading(id, alex))
         assertEquals(listOf("write"), fake.calls)
     }
 
     @Test fun removeFailureKeepsRow() = runBlocking {
-        val id = add(julia, true)
+        val id = add(alex, true)
         fake.removeOk = false
         assertFalse(actions.moveReading(id, jing))
-        assertEquals(julia, Db(context).reading(id)!!.personId)
+        assertEquals(alex, Db(context).reading(id)!!.personId)
         assertEquals(0, changed)
     }
 
@@ -80,7 +80,7 @@ class RowActionsTest {
     }
 
     @Test fun deleteWhenHealthConnectGoneSucceeds() = runBlocking {
-        val id = add(julia, true)
+        val id = add(alex, true)
         val real = RowActions(Robolectric.buildActivity(MainActivity::class.java).setup().get(), hcPort(context)) { changed++ }
         assertTrue(real.deleteReading(id))
         assertNull(Db(context).reading(id))
@@ -88,14 +88,14 @@ class RowActionsTest {
     }
 
     @Test fun syncPendingSkipsWithoutPermission() = runBlocking {
-        add(julia, false)
+        add(alex, false)
         fake.canWrite = false
         HealthConnect.syncPending(context, fake)
         assertTrue(fake.written.isEmpty())
     }
 
     @Test fun deleteWrittenRemovesFirst() = runBlocking {
-        val id = add(julia, true)
+        val id = add(alex, true)
         assertTrue(actions.deleteReading(id))
         assertEquals(listOf("remove"), fake.calls)
         assertNull(Db(context).reading(id))
@@ -109,16 +109,16 @@ class RowActionsTest {
     }
 
     @Test fun sheetAndDialogOpen() {
-        val id = add(julia, true)
+        val id = add(alex, true)
         actions.openRowSheet(id)
         actions.confirmDelete(id)
-        actions.showSaved("Julia", 6570)
+        actions.showSaved("Alex", 6570)
         actions.showMatched(6, "Sam Lee")
         assertNotNull(org.robolectric.shadows.ShadowDialog.getLatestDialog())
     }
 
     @Test fun deleteDialogHasPeek() {
-        val id = add(julia, true)
+        val id = add(alex, true)
         actions.confirmDelete(id)
         val root = org.robolectric.shadows.ShadowDialog.getLatestDialog().window!!.decorView
         fun walk(v: android.view.View, f: (android.view.View) -> Unit) { f(v); if (v is android.view.ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i), f) }
@@ -129,7 +129,7 @@ class RowActionsTest {
     }
 
     @Test fun readingMovedAwayIsNotWrittenBySyncPending() = runBlocking {
-        val a = add(julia, false, 1_700_000_002_000L); val b = add(julia, false, 1_700_000_001_000L)
+        val a = add(alex, false, 1_700_000_002_000L); val b = add(alex, false, 1_700_000_001_000L)
         val gate = kotlinx.coroutines.CompletableDeferred<Unit>(); fake.gate = gate
         val sync = launch { HealthConnect.syncPending(context, fake) }
         yield() // sync is now inside the write of the newest reading

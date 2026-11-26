@@ -53,17 +53,17 @@ class TrendTest {
     }
 
     @Test fun summaryWording() {
-        assertEquals("Julia is at 65.58 kg, down 0.45 kg.", summaryLine("Julia", 65.58, -0.45, false))
-        assertEquals("Julia is at 65.58 kg, up 0.45 kg.", summaryLine("Julia", 65.58, 0.45, false))
-        assertEquals("Julia is at 65.58 kg, no change.", summaryLine("Julia", 65.58, 0.04, false))
-        assertEquals("Julia was at 65.65 kg, down 0.38 kg.", summaryLine("Julia", 65.65, -0.38, true))
+        assertEquals("Alex is at 65.58 kg, down 0.45 kg.", summaryLine("Alex", 65.58, -0.45, false))
+        assertEquals("Alex is at 65.58 kg, up 0.45 kg.", summaryLine("Alex", 65.58, 0.45, false))
+        assertEquals("Alex is at 65.58 kg, no change.", summaryLine("Alex", 65.58, 0.04, false))
+        assertEquals("Alex was at 65.65 kg, down 0.38 kg.", summaryLine("Alex", 65.65, -0.38, true))
         assertEquals("Sam Lee has no weigh-ins in this range.", summaryLine("Sam Lee", null, null, false))
     }
 
     @Test fun initialsRule() {
         assertEquals("SL", initials("Sam Lee"))
-        assertEquals("JU", initials("Julia"))
-        assertEquals("JS", initials("julia stone"))
+        assertEquals("AL", initials("Alex"))
+        assertEquals("AS", initials("alex stone"))
     }
 
     @Test fun monthGroupsAcrossYear() {

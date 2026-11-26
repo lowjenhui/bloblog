@@ -34,7 +34,7 @@ class CaptureTest {
     private fun packet(centi: Int) = ScalePacket("s", 0x20, centi)
 
     @Test fun ownerWeighInWritesHealthConnectAndBroadcasts() = runBlocking {
-        val db = Db(context); db.addPerson("Julia", 6630, true); db.addPerson("Sam Lee", 5500, false)
+        val db = Db(context); db.addPerson("Alex", 6630, true); db.addPerson("Sam Lee", 5500, false)
         ModePrefs.set(context, PeopleMode.DUO)
         val id = handleWeighIn(context, db, packet(6600), byteArrayOf(1), 1_700_000_000_000L, hc)
         assertNotNull(id)
@@ -43,7 +43,7 @@ class CaptureTest {
     }
 
     @Test fun soloPartnerWeightIsHeldBack() = runBlocking {
-        val db = Db(context); db.addPerson("Julia", 6630, true); db.addPerson("Sam Lee", 7840, false)
+        val db = Db(context); db.addPerson("Alex", 6630, true); db.addPerson("Sam Lee", 7840, false)
         ModePrefs.set(context, PeopleMode.SOLO)
         val id = handleWeighIn(context, db, packet(7820), byteArrayOf(1), 1_700_000_000_000L, hc)!!
         assertEquals(0, hc.writes)

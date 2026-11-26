@@ -44,7 +44,8 @@ fun View.fill(attr: Int, radiusDp: Int = 0, inset: Boolean = false) {
     context.theme.resolveAttribute(attr, tv, true)
     val d = if (tv.type in TypedValue.TYPE_FIRST_COLOR_INT..TypedValue.TYPE_LAST_COLOR_INT)
         GradientDrawable().apply { setColor(tv.data); cornerRadius = context.dp(radiusDp).toFloat() }
-    else context.getDrawable(tv.resourceId)!!
+    // Drawable files (Colourful's gradient chip) get the same corners as solid colours.
+    else context.getDrawable(tv.resourceId)!!.mutate().also { (it as? GradientDrawable)?.cornerRadius = context.dp(radiusDp).toFloat() }
     // Setting a background replaces the view's padding with the drawable's, so keep the padding the caller set.
     val (l, t, r, b) = listOf(paddingLeft, paddingTop, paddingRight, paddingBottom)
     // inset: a 48 dp tap target that is drawn 40 dp tall
