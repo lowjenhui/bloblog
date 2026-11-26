@@ -107,7 +107,11 @@ class MainActivity : ComponentActivity() {
         hcConnected = hcAvailable && HealthConnect.hasPermission(this)
     }
 
-    internal fun selectTab(personId: Long) { tab = personId; month = null; render() }
+    internal fun selectTab(personId: Long) {
+        tab = personId; month = null
+        if (personId == -1L && range == Range.DAY) range = Range.WEEK // Compare has no Day pill
+        render()
+    }
 
     private fun render() {
         val db = Db(this)
@@ -119,11 +123,23 @@ class MainActivity : ComponentActivity() {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         val people = db.people()
-        val p = people.firstOrNull { it.id == tab } ?: people.firstOrNull().also { tab = it?.id ?: 0 }
+        val compare = tab == -1L && people.size >= 2
+        val p = if (compare) null else people.firstOrNull { it.id == tab } ?: people.firstOrNull().also { tab = it?.id ?: 0 }
         person = p
         showChips(people, p)
-        showStrip(db, p)
+        showStrip(db, p?.isMe == true)
+        (findViewById<View>(R.id.headlineWeight).parent as View).visibility = if (compare) View.GONE else View.VISIBLE
         val list = findViewById<RecyclerView>(R.id.list)
+        if (compare) {
+            val now = System.currentTimeMillis()
+            val from = rangeStart(range, now, zone)
+            // 7 days before the range start feed the first averages and the baseline
+            val pts = people.map { q -> db.readingsFor(q.id, from - 7 * 86_400_000L, now + 1).map { Pt(it.takenAt, it.weightCentiKg) }
+                .let { l -> if (l.any { it.at >= from }) l else emptyList() } }
+            val series = pts.map { compareSeries(it, from, now, zone) }
+            list.adapter = HomeAdapter(listOf(HomeItem.Compare(range, people, pts, series, from, zone)), { range = it; render() }, {}, {}, {})
+            return
+        }
         if (p == null) { list.adapter = null; return }
 
         val now = System.currentTimeMillis()
@@ -162,7 +178,7 @@ class MainActivity : ComponentActivity() {
             row.addView(this, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(8) })
         }
         people.forEach { p -> chip(p.name, p.id == current?.id) { selectTab(p.id) } }
-        chip("Compare", false) { } // Task 8
+        if (people.size >= 2) chip("Compare", current == null) { selectTab(-1) }
         TextView(this).apply {
             text = "⚙"; textSize = 18f; gravity = Gravity.CENTER
             setTextColor(token(R.attr.bl_onGrey)); fill(R.attr.bl_surfaceGrey, 20, inset = true)
@@ -172,10 +188,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun showStrip(db: Db, p: Person?) {
+    private fun showStrip(db: Db, ownerTab: Boolean) {
         val unassigned = db.unassigned()
         val newest = unassigned.lastOrNull()
-        val notice = noticeFor(scanState, unassigned.size, hcAvailable, hcConnected, p?.isMe == true)
+        val notice = noticeFor(scanState, unassigned.size, hcAvailable, hcConnected, ownerTab)
         val strip = findViewById<View>(R.id.strip)
         strip.visibility = if (notice == null) View.GONE else View.VISIBLE
         if (notice == null) return

@@ -133,4 +133,34 @@ class HomeTest {
         assertTrue(pill.height >= min)
         assertTrue(monthChip.height >= min)
     }
+
+    private fun compare(): MainActivity {
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        a.selectTab(-1); layOut(a)
+        return a
+    }
+
+    @Test fun compareHidesDay() {
+        val d = db(); add(d.me()!!.id, now - hour, 6500)
+        val a = compare()
+        val t = listTexts(a)
+        assertFalse(t.contains("Day")); assertFalse(t.contains("History"))
+        assertTrue(t.containsAll(listOf("Week", "Month", "3M", "Year")))
+        assertEquals(android.view.View.GONE, (a.findViewById<View>(R.id.headlineWeight).parent as View).visibility)
+    }
+
+    @Test fun compareSummaryLines() {
+        val d = db(); val me = d.me()!!.id; val second = d.people()[1].id
+        add(me, now - 20 * day, 6600); add(me, now - hour, 6500)
+        add(second, now - 20 * day, 5500); add(second, now - hour, 5540)
+        val t = listTexts(compare())
+        val from = java.time.Instant.ofEpochMilli(rangeStart(Range.MONTH, now, ZoneId.systemDefault())).atZone(ZoneId.systemDefault())
+        assertTrue(t.contains("Change since ${DateTimeFormatter.ofPattern("d MMM", Locale.ENGLISH).format(from)} · 7-day averages"))
+        assertTrue(t.contains("Today\nJulia is at 65.00 kg, down 1.00 kg.\nSam Lee is at 55.40 kg, up 0.40 kg."))
+    }
+
+    @Test fun compareNoDataLine() {
+        val d = db(); add(d.me()!!.id, now - hour, 6500)
+        assertTrue(listTexts(compare()).contains("Today\nJulia is at 65.00 kg, no change.\nSam Lee has no weigh-ins in this range."))
+    }
 }

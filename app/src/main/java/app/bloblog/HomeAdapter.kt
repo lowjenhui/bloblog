@@ -15,12 +15,19 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import android.text.SpannableStringBuilder
+import android.text.style.StyleSpan
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 sealed interface HomeItem {
     class Graph(val pts: List<Pt>, val range: Range, val person: Person, val startCenti: Int, val nowMs: Long) : HomeItem
+    class Compare(val range: Range, val people: List<Person>, val pts: List<List<Pt>>,
+                  val series: List<List<Pair<LocalDate, Double?>>>, val fromMs: Long, val zone: ZoneId) : HomeItem
     class HistoryHeader(val count: Int, val month: YearMonth) : HomeItem
     class Months(val months: List<YearMonth>, val selected: YearMonth) : HomeItem
     class Row(val reading: Reading, val notSent: Boolean, val last: Boolean) : HomeItem
@@ -70,6 +77,7 @@ class HomeAdapter(
         (box.layoutParams as RecyclerView.LayoutParams).topMargin = 0
         box.addView(when (val item = items[position]) {
             is HomeItem.Graph -> graph(c, item)
+            is HomeItem.Compare -> compare(c, item)
             is HomeItem.HistoryHeader -> historyHeader(c, item)
             is HomeItem.Months -> months(c, item)
             is HomeItem.Row -> row(c, item.reading, item.last, whose = false, notSent = item.notSent)
@@ -86,18 +94,51 @@ class HomeAdapter(
 
     private fun vertical(c: Context) = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
 
-    private fun graph(c: Context, g: HomeItem.Graph) = vertical(c).apply {
-        setPadding(c.dp(16), 0, c.dp(16), c.dp(32))
-        val track = LinearLayout(c).apply { fill(R.attr.bl_surfaceGrey, 20, inset = true) }
-        listOf(Range.DAY to "Day", Range.WEEK to "Week", Range.MONTH to "Month", Range.M3 to "3M", Range.YEAR to "Year").forEach { (r, label) ->
-            val sel = r == g.range
-            track.addView(text(c, label, 12f, if (sel) R.attr.bl_onSelect else R.attr.bl_onGrey).apply {
+    private fun pills(c: Context, ranges: List<Pair<Range, String>>, current: Range) = LinearLayout(c).apply {
+        fill(R.attr.bl_surfaceGrey, 20, inset = true)
+        ranges.forEach { (r, label) ->
+            val sel = r == current
+            addView(text(c, label, 12f, if (sel) R.attr.bl_onSelect else R.attr.bl_onGrey).apply {
                 gravity = Gravity.CENTER
                 if (sel) fill(R.attr.bl_select, 20, inset = true)
                 setOnClickListener { onRange(r) }
             }, LinearLayout.LayoutParams(0, c.dp(48), 1f))
         }
-        addView(track, LinearLayout.LayoutParams(-1, -2))
+    }
+
+    private fun compare(c: Context, g: HomeItem.Compare) = vertical(c).apply {
+        setPadding(c.dp(16), 0, c.dp(16), c.dp(32))
+        val fmt = { f: String -> DateTimeFormatter.ofPattern(f, Locale.ENGLISH) }
+        val from = java.time.Instant.ofEpochMilli(g.fromMs).atZone(g.zone)
+        addView(text(c, "Change since ${fmt("d MMM").format(from)} · 7-day averages", 12f, R.attr.bl_textMuted).apply { setPadding(0, 0, 0, c.dp(8)) })
+        addView(pills(c, listOf(Range.WEEK to "Week", Range.MONTH to "Month", Range.M3 to "3M", Range.YEAR to "Year"), g.range), LinearLayout.LayoutParams(-1, -2))
+        val days = g.series[0].map { it.first }
+        val summary = text(c, "", 14f, R.attr.bl_text).apply { setPadding(c.dp(12), c.dp(8), c.dp(12), 0) }
+        fun show(idx: Int?) {
+            val i = (idx ?: days.lastIndex).coerceIn(0, days.lastIndex)
+            val sb = SpannableStringBuilder(if (idx == null) "Today" else fmt("EEE d MMM").format(days[i]))
+            val endOfDay = days[i].plusDays(1).atStartOfDay(g.zone).toInstant().toEpochMilli() - 1
+            g.people.forEachIndexed { k, p ->
+                val change = g.series[k][i].second
+                val start = sb.length + 1
+                sb.append("\n").append(summaryLine(p.name, change?.let { avg7At(g.pts[k], endOfDay) }, change, past = idx != null))
+                sb.setSpan(StyleSpan(Typeface.BOLD), start, start + p.name.length, 0)
+                sb.setSpan(ForegroundColorSpan(c.token(p.textAttr())), start, start + p.name.length, 0)
+            }
+            summary.text = sb
+        }
+        show(null)
+        val chart = TrendChartView(c).apply {
+            showCompare(g.people.zip(g.series) { p, s -> p.name to s }, g.people.map { it.lineAttr() })
+            onScrub = { show(it); this@HomeAdapter.onScrub(it) }
+        }
+        addView(chart, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(8); marginStart = c.dp(12); marginEnd = c.dp(12) })
+        addView(summary)
+    }
+
+    private fun graph(c: Context, g: HomeItem.Graph) = vertical(c).apply {
+        setPadding(c.dp(16), 0, c.dp(16), c.dp(32))
+        addView(pills(c, listOf(Range.DAY to "Day", Range.WEEK to "Week", Range.MONTH to "Month", Range.M3 to "3M", Range.YEAR to "Year"), g.range), LinearLayout.LayoutParams(-1, -2))
         val chart = TrendChartView(c).apply {
             showPerson(g.pts, g.range, g.person.lineAttr(), g.person.dotAttr(), g.nowMs, g.startCenti)
             onScrub = this@HomeAdapter.onScrub

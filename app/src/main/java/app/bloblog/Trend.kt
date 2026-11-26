@@ -28,7 +28,7 @@ fun rangeStart(r: Range, nowMs: Long, zone: ZoneId): Long = when (r) {
 }
 
 /** Mean kg of points in (t - 7d, t], or null if none. */
-private fun avg7At(pts: List<Pt>, t: Long): Double? =
+internal fun avg7At(pts: List<Pt>, t: Long): Double? =
     pts.filter { it.at > t - WEEK_MS && it.at <= t }.map { it.centi / 100.0 }.average().takeIf { !it.isNaN() }
 
 fun avg7Segments(pts: List<Pt>): List<List<Pair<Long, Double>>> {
