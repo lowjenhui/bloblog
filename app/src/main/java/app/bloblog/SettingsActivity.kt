@@ -1,18 +1,15 @@
 package app.bloblog
 
 import android.os.Bundle
-import android.text.InputType
 import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.ComponentActivity
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Locale
 
 /** Settings: People and Appearance (spec §5.3). */
@@ -31,21 +28,24 @@ class SettingsActivity : ComponentActivity() {
     private fun render() {
         col.removeAllViews()
         val db = Db(this)
-        val people = db.people()
+        val mode = ModePrefs.get(this, db)
+        val people = db.activePeople(mode)
         col.addView(text("Settings", 24f, R.attr.bl_text, bold = true))
 
         col.addView(text("People", 16f, R.attr.bl_text, bold = true), lp(top = 24))
         val intro = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         intro.addView(ImageView(this).apply { setImageResource(R.drawable.blob_wave); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },
             LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) })
-        intro.addView(text("Who steps on the scale. Weigh-ins are matched to the closest person.", 14f, R.attr.bl_textMuted))
+        intro.addView(text("Who steps on the scale. Weigh-ins are matched to the closest person.", 14f, R.attr.bl_text))
         col.addView(intro, lp(top = 8))
+        col.addView(text("Who weighs in?", 12f, R.attr.bl_textMuted), lp(top = 12))
+        col.addView(modeControl(mode, db), lp(top = 4))
         val hcAvailable = HealthConnect.client(this) != null
         people.forEachIndexed { i, p ->
             col.addView(personRow(p, db.startWeight(p.id), hcAvailable))
             if (i < people.lastIndex) col.addView(View(this).apply { fill(R.attr.bl_divider) }, LinearLayout.LayoutParams(-1, dp(1)))
         }
-        if (people.size < 2) col.addView(text("+ Add person", 14f, R.attr.bl_onSelect).apply {
+        if (mode == PeopleMode.DUO && people.size < 2) col.addView(text("+ Add person", 14f, R.attr.bl_onSelect).apply {
             gravity = Gravity.CENTER; fill(R.attr.bl_select, 20, inset = true)
             setOnClickListener { editPerson(null) }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
@@ -55,7 +55,30 @@ class SettingsActivity : ComponentActivity() {
         for ((t, desc) in listOf(AppTheme.COLOURFUL to "Blob colours and a soft gradient", AppTheme.CALM to "Neutral greys with soft blob colours", AppTheme.DARK to "Easy on the eyes at night")) {
             col.addView(themeRow(t, desc, t == current))
         }
-        col.addView(text("Each person's colour is also their line on the Compare tab. Only the person marked (Me) is sent to Health Connect.", 12f, R.attr.bl_textMuted), lp(top = 12))
+        col.addView(text(if (mode == PeopleMode.SOLO) "Weigh-ins far from your weight are held back and ask “Whose?”, so guests and bags never reach Health Connect."
+            else "Weigh-ins are matched to the closest person. Only the person marked (Me) is sent to Health Connect.", 12f, R.attr.bl_textMuted), lp(top = 12))
+    }
+
+    private fun modeControl(mode: PeopleMode, db: Db) = LinearLayout(this).apply {
+        fill(R.attr.bl_surfaceGrey, 20, inset = true)
+        for ((m, label) in listOf(PeopleMode.SOLO to "Just me", PeopleMode.DUO to "Two people")) {
+            val sel = m == mode
+            addView(text(label, 14f, if (sel) R.attr.bl_onSelect else R.attr.bl_onGrey).apply {
+                gravity = Gravity.CENTER
+                if (sel) fill(R.attr.bl_select, 20, inset = true)
+                setOnClickListener { if (!sel) switchTo(m, db) }
+            }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        }
+    }
+
+    /** Spec §5.8 "Switching". */
+    private fun switchTo(m: PeopleMode, db: Db) {
+        if (m == PeopleMode.SOLO) { ModePrefs.set(this, m); return render() }
+        if (db.people().size < 2) return editPerson(null) // Cancel leaves Just me
+        ModePrefs.set(this, m)
+        val second = db.people().first { !it.isMe }
+        db.backfill(second.id).takeIf { it > 0 }?.let { rows.showMatched(it, second.name) }
+        render()
     }
 
     private fun personRow(p: Person, startCenti: Int, hcAvailable: Boolean): View {
@@ -101,38 +124,10 @@ class SettingsActivity : ComponentActivity() {
         return row
     }
 
-    /** [p] null adds a person. The owner stays the owner (spec §9). */
-    private fun editPerson(p: Person?) {
-        val name = EditText(this).apply { hint = "Name"; setText(p?.name ?: "") }
-        val weight = EditText(this).apply {
-            hint = "Starting weight (kg)"
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            if (p != null) setText("%.2f".format(Locale.ROOT, Db(this@SettingsActivity).startWeight(p.id) / 100.0))
-        }
-        val form = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(8), dp(24), 0); addView(name); addView(weight) }
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(if (p == null) "Add person" else "Edit person")
-            .setView(form)
-            .setNegativeButton("Cancel", null)
-            .setPositiveButton("Save", null) // real handler below, so invalid input keeps the dialog open
-            .show()
-        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val kg = weight.text.toString().replace(',', '.').toDoubleOrNull()
-            when {
-                name.text.isBlank() -> name.error = "Enter a name."
-                kg == null || kg < 20 || kg > 250 -> weight.error = "Enter a weight between 20 and 250 kg."
-                else -> {
-                    val db = Db(this); val n = name.text.toString().trim(); val centi = Math.round(kg * 100).toInt()
-                    dialog.dismiss()
-                    if (p != null) db.updatePerson(p.id, n, centi) else {
-                        db.addPerson(n, centi, isMe = false)
-                        db.backfill(db.people().last().id).takeIf { it > 0 }?.let { rows.showMatched(it, n) }
-                    }
-                    render()
-                }
-            }
-        }
-    }
+    private fun editPerson(p: Person?) = personDialog(p, onSaved = { n, matched ->
+        if (matched > 0) rows.showMatched(matched, n)
+        render()
+    })
 
     private fun lp(top: Int) = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(top) }
 

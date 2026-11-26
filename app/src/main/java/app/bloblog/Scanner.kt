@@ -60,7 +60,7 @@ class ScanReceiver : BroadcastReceiver() {
                     val p = ScalePacket.parse(raw) ?: continue
                     val id = db.saveIfNew(p, now, raw) ?: continue
                     Log.i("Bloblog", "saved ${p.weightCentiKg / 100.0} kg")
-                    val personId = assign(p.weightCentiKg, db.refs(now))
+                    val personId = assign(p.weightCentiKg, db.refs(now, ModePrefs.get(context, db)))
                     db.setPerson(id, personId)
                     val reading = db.reading(id) ?: continue
                     if (personId == null) Notifications.unassigned(context, reading)

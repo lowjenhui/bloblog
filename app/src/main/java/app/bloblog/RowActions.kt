@@ -56,8 +56,9 @@ class RowActions(
         head.addView(titles)
         col.addView(head)
 
-        col.addView(label("Move to", 12f, R.attr.bl_textMuted).apply { setPadding(0, a.dp(16), 0, a.dp(4)) })
-        for (p in people.filter { it.id != r.personId }) {
+        val solo = ModePrefs.get(a, db) == PeopleMode.SOLO
+        if (!solo) col.addView(label("Move to", 12f, R.attr.bl_textMuted).apply { setPadding(0, a.dp(16), 0, a.dp(4)) })
+        for (p in if (solo) db.me()?.takeIf { r.personId == null }?.let { listOf(it) } ?: emptyList() else people.filter { it.id != r.personId }) {
             val row = LinearLayout(a).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 setOnClickListener { sheet.dismiss(); a.lifecycleScope.launch { moveReading(readingId, p.id) } }
@@ -66,13 +67,17 @@ class RowActions(
                 gravity = Gravity.CENTER
                 fill(if (p.order == 0) R.attr.bl_ownerTint else R.attr.bl_secondTint, 16)
             }, LinearLayout.LayoutParams(a.dp(32), a.dp(32)).apply { marginEnd = a.dp(12) })
-            row.addView(label(p.name, 14f, R.attr.bl_text))
+            row.addView(label(if (solo) "This is me" else p.name, 14f, R.attr.bl_text))
             col.addView(row, LinearLayout.LayoutParams(-1, a.dp(48)))
         }
         col.addView(label("🗑 Delete weigh-in", 14f, R.attr.bl_text).apply {
             gravity = Gravity.CENTER_VERTICAL
             setOnClickListener { sheet.dismiss(); confirmDelete(readingId) }
         }, LinearLayout.LayoutParams(-1, a.dp(48)).apply { topMargin = a.dp(12) })
+        if (solo && r.personId == null) col.addView(label("Someone else uses this scale? Add them", 14f, R.attr.bl_textMuted).apply {
+            gravity = Gravity.CENTER_VERTICAL
+            setOnClickListener { sheet.dismiss(); a.personDialog(null) { n, matched -> if (matched > 0) showMatched(matched, n); onChanged() } }
+        }, LinearLayout.LayoutParams(-1, a.dp(48)))
         sheet.setContentView(col)
         sheet.show()
     }

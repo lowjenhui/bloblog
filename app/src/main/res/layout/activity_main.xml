@@ -110,6 +110,22 @@
                     android:textColor="?attr/bl_textMuted"
                     android:textSize="12sp" />
             </LinearLayout>
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/headlineSettings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="Settings"
+                android:gravity="center"
+                android:text="⚙"
+                android:textColor="?attr/bl_onGrey"
+                android:textSize="18sp"
+                android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 

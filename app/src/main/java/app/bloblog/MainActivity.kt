@@ -126,11 +126,12 @@ class MainActivity : ComponentActivity() {
             askedNotifications = true
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        val people = db.people()
+        val mode = ModePrefs.get(this, db)
+        val people = db.activePeople(mode)
         val compare = tab == -1L && people.size >= 2
         val p = if (compare) null else people.firstOrNull { it.id == tab } ?: people.firstOrNull().also { tab = it?.id ?: 0 }
         person = p
-        showChips(people, p)
+        showChips(people, p, mode)
         showStrip(db, p?.isMe == true)
         (findViewById<View>(R.id.headlineWeight).parent as View).visibility = if (compare) View.GONE else View.VISIBLE
         val list = findViewById<RecyclerView>(R.id.list)
@@ -171,9 +172,17 @@ class MainActivity : ComponentActivity() {
             onScrub = { showHeadline(db, p, it) })
     }
 
-    private fun showChips(people: List<Person>, current: Person?) {
+    private fun showChips(people: List<Person>, current: Person?, mode: PeopleMode) {
         val row = findViewById<LinearLayout>(R.id.chips)
         row.removeAllViews()
+        val solo = mode == PeopleMode.SOLO
+        row.visibility = if (solo) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.headlineSettings).apply {
+            visibility = if (solo) View.VISIBLE else View.GONE
+            fill(R.attr.bl_surfaceGrey, 20, inset = true)
+            setOnClickListener { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) }
+        }
+        if (solo) return
         fun chip(label: String, selected: Boolean, onClick: () -> Unit) = TextView(this).apply {
             text = label; textSize = 14f; gravity = Gravity.CENTER
             setTextColor(token(if (selected) R.attr.bl_onPersonSelected else R.attr.bl_onGrey))

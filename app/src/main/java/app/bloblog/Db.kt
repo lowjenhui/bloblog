@@ -94,13 +94,13 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
     }
 
     /** Each person's reference weight at [atMs]: 7-day average, else latest assigned reading, else starting weight (spec §7.1). */
-    fun refs(atMs: Long): Map<Long, Int> =
+    fun refs(atMs: Long, mode: PeopleMode): Map<Long, Int> =
         readableDatabase.rawQuery(
             "SELECT p.id, COALESCE(" +
                 "(SELECT CAST(ROUND(AVG(weight_centi)) AS INTEGER) FROM reading r " +
                 "WHERE r.person_id = p.id AND r.taken_at > ? AND r.taken_at <= ?), " +
                 "(SELECT weight_centi FROM reading r WHERE r.person_id = p.id AND r.taken_at <= ? ORDER BY r.taken_at DESC LIMIT 1), " +
-                "p.start_weight_centi) FROM person p",
+                "p.start_weight_centi) FROM person p" + if (mode == PeopleMode.SOLO) " WHERE p.is_me = 1" else "",
             arrayOf((atMs - 7 * 86_400_000L).toString(), atMs.toString(), atMs.toString())
         ).use { c -> buildMap { while (c.moveToNext()) put(c.getLong(0), c.getInt(1)) } }
 
@@ -108,7 +108,7 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
     fun backfill(newPersonId: Long): Int {
         var n = 0
         for (r in readings("WHERE person_id IS NULL").reversed()) {
-            if (assign(r.weightCentiKg, refs(r.takenAt)) == newPersonId) { setPerson(r.id, newPersonId); n++ }
+            if (assign(r.weightCentiKg, refs(r.takenAt, PeopleMode.DUO)) == newPersonId) { setPerson(r.id, newPersonId); n++ }
         }
         return n
     }

@@ -35,7 +35,7 @@ class SettingsTest {
     private fun root(a: SettingsActivity) = a.findViewById<View>(android.R.id.content)
 
     @Test fun addPersonRunsBackfill() {
-        Db(context).addPerson("Julia", 6500, true)
+        Db(context).addPerson("Julia", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
         Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
             put("taken_at", 1_700_000_000_000L); put("weight_centi", 5500); put("scale_id", "s"); put("raw_hex", "")
         })
@@ -52,7 +52,7 @@ class SettingsTest {
     }
 
     @Test fun addHiddenAtTwo() {
-        Db(context).addPerson("Julia", 6500, true)
+        Db(context).addPerson("Julia", 6500, true); ModePrefs.set(context, PeopleMode.DUO)
         assertNotNull(text(root(settings()), "+ Add person"))
         Db(context).addPerson("Sam Lee", 5500, false)
         assertNull(text(root(settings()), "+ Add person"))

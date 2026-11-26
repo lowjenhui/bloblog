@@ -34,10 +34,10 @@ class DbTest {
         val db = Db(context)
         db.addPerson("Me", 6630, isMe = true)
         val pid = db.people().single().id
-        assertEquals(6630, db.refs(0)[pid])
+        assertEquals(6630, db.refs(0, PeopleMode.DUO)[pid])
         val id = db.saveIfNew(ScalePacket("id", 0x23, 6700), 0, raw)!!
         db.setPerson(id, pid)
-        assertEquals(6700, db.refs(0)[pid])
+        assertEquals(6700, db.refs(0, PeopleMode.DUO)[pid])
     }
 
     private fun Db.add(w: Int, at: Long, person: Long? = null) {
@@ -55,14 +55,14 @@ class DbTest {
         db.add(6000, now - 10 * day, pid)
         db.add(6600, now - 3 * day, pid)
         db.add(6700, now - 1 * day, pid)
-        assertEquals(6650, db.refs(now)[pid])
+        assertEquals(6650, db.refs(now, PeopleMode.DUO)[pid])
     }
 
     @Test fun luggageHeldBack() {
         val db = Db(context)
         db.addPerson("Me", 6600, isMe = true)
         db.addPerson("Guest", 7840, isMe = false)
-        assertNull(assign(8160, db.refs(0)))
+        assertNull(assign(8160, db.refs(0, PeopleMode.DUO)))
     }
 
     @Test fun backfillOnlyNewPerson() {
@@ -108,7 +108,7 @@ class DbTest {
         db.setPerson(later, pid)
         // At day 5 nothing is in the last 7 days and the only assigned reading is from day 20,
         // so the reference falls back to the start weight, not the later reading.
-        assertEquals(6630, db.refs(5 * day)[pid])
+        assertEquals(6630, db.refs(5 * day, PeopleMode.DUO)[pid])
     }
 
     @Test fun readingsForRange() {
