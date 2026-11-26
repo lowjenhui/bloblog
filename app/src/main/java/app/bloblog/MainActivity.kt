@@ -13,11 +13,11 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
     private var month: YearMonth? = null
     private var shownPts = emptyList<Pt>()
     private var person: Person? = null
+    private val rows = RowActions(this) { render() }
 
     private val hcPermission = registerForActivityResult(PermissionController.createRequestPermissionResultContract()) {
         lifecycleScope.launch { checkHc(); render() }
@@ -55,7 +56,18 @@ class MainActivity : ComponentActivity() {
         applyAppTheme()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        findViewById<RecyclerView>(R.id.list).layoutManager = LinearLayoutManager(this)
+        val list = findViewById<RecyclerView>(R.id.list)
+        list.layoutManager = LinearLayoutManager(this)
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT) {
+            override fun getSwipeDirs(rv: RecyclerView, vh: RecyclerView.ViewHolder) =
+                if ((rv.adapter as? HomeAdapter)?.readingIdAt(vh.bindingAdapterPosition) == null) 0 else super.getSwipeDirs(rv, vh)
+            override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
+            override fun onSwiped(vh: RecyclerView.ViewHolder, dir: Int) {
+                val adapter = list.adapter as HomeAdapter
+                val pos = vh.bindingAdapterPosition
+                rows.confirmDelete(adapter.readingIdAt(pos) ?: return) { adapter.notifyItemChanged(pos) }
+            }
+        }).attachToRecyclerView(list)
         savedInstanceState?.let { s ->
             tab = s.getLong("tab")
             range = Range.valueOf(s.getString("range") ?: Range.MONTH.name)
@@ -79,7 +91,7 @@ class MainActivity : ComponentActivity() {
     /** Opened from the "Whose weigh-in?" notification. */
     private fun openRequested(intent: Intent) {
         val id = intent.getLongExtra(Notifications.EXTRA_READING_ID, -1)
-        if (id >= 0) openRowSheet(id)
+        if (id >= 0) rows.openRowSheet(id)
     }
 
     // shortcut: the page refreshes only when the screen is opened or resumed (live updates are a later task).
@@ -135,7 +147,7 @@ class MainActivity : ComponentActivity() {
         list.adapter = HomeAdapter(items,
             onRange = { range = it; render() },
             onMonth = { month = it; render() },
-            onRow = ::openRowSheet,
+            onRow = rows::openRowSheet,
             onScrub = { showHeadline(db, p, it) })
     }
 
@@ -193,7 +205,7 @@ class MainActivity : ComponentActivity() {
             else bluetoothPermission.launch(Manifest.permission.BLUETOOTH_SCAN)
         }
         chevron.visibility = if (notice == Notice.WHOSE) View.VISIBLE else View.GONE
-        strip.setOnClickListener { if (notice == Notice.WHOSE) openRowSheet(newest!!.id) }
+        strip.setOnClickListener { if (notice == Notice.WHOSE) rows.openRowSheet(newest!!.id) }
         strip.isClickable = notice == Notice.WHOSE
     }
 
@@ -247,43 +259,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    /** Task 7 replaces this with the row sheet. */
-    private fun openRowSheet(readingId: Long) = choose(readingId)
-
-    private fun choose(readingId: Long) {
-        val people = Db(this).people()
-        val items = people.map { it.name } + "Not us — delete"
-        AlertDialog.Builder(this)
-            .setTitle("Whose weigh-in?")
-            .setItems(items.toTypedArray()) { _, i ->
-                lifecycleScope.launch { if (i < people.size) assignTo(readingId, people[i]) else delete(readingId) }
-            }
-            .show()
-    }
-
-    private suspend fun assignTo(readingId: Long, person: Person) {
-        val db = Db(this)
-        val wasWritten = db.isWritten(readingId)
-        if (wasWritten && !person.isMe && !HealthConnect.remove(this, readingId)) return hcFailed()
-        db.setPerson(readingId, person.id)
-        if (person.isMe && !wasWritten) db.reading(readingId)?.let { HealthConnect.write(this, it) }
-        done(readingId)
-    }
-
-    private suspend fun delete(readingId: Long) {
-        val db = Db(this)
-        if (db.isWritten(readingId) && !HealthConnect.remove(this, readingId)) return hcFailed()
-        db.delete(readingId)
-        done(readingId)
-    }
-
-    private fun hcFailed() =
-        Toast.makeText(this, "Couldn't update Health Connect. Try again.", Toast.LENGTH_LONG).show()
-
-    private fun done(readingId: Long) {
-        Notifications.cancel(this, readingId)
-        render()
     }
 }

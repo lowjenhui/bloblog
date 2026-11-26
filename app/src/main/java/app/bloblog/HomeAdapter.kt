@@ -57,6 +57,7 @@ class HomeAdapter(
     class Holder(v: View) : RecyclerView.ViewHolder(v)
 
     override fun getItemCount() = items.size
+    fun readingIdAt(pos: Int): Long? = when (val i = items.getOrNull(pos)) { is HomeItem.Row -> i.reading.id; is HomeItem.WhoseRow -> i.reading.id; else -> null }
     override fun getItemViewType(position: Int) = items[position].let { if (it is HomeItem.Row || it is HomeItem.WhoseRow) 1 else 0 }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = Holder(
         FrameLayout(parent.context).apply { layoutParams = RecyclerView.LayoutParams(-1, -2) }
