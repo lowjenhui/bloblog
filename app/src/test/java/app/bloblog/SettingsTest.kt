@@ -78,4 +78,12 @@ class SettingsTest {
             assertEquals(AppTheme.DARK, it.createdTheme)
         }
     }
+
+    @Test fun peopleNoteSitsAboveAppearance() {
+        Db(context).addPerson("Julia", 6500, true)
+        val all = views(root(settings()))
+        val note = all.indexOfFirst { (it as? TextView)?.text?.startsWith("Weigh-ins far from your weight") == true }
+        val appearance = all.indexOfFirst { (it as? TextView)?.text?.toString() == "Appearance" }
+        assert(note in 0 until appearance) { "note at $note, Appearance at $appearance" }
+    }
 }

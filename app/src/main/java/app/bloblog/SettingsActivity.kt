@@ -49,14 +49,15 @@ class SettingsActivity : ComponentActivity() {
             gravity = Gravity.CENTER; fill(R.attr.bl_select, 20, inset = true)
             setOnClickListener { editPerson(null) }
         }, LinearLayout.LayoutParams(-1, dp(48)).apply { topMargin = dp(12) })
+        // The per-mode note explains the People section, so it sits under the people list.
+        col.addView(text(if (mode == PeopleMode.SOLO) "Weigh-ins far from your weight are held back and ask “Whose?”, so guests and bags never reach Health Connect."
+            else "Weigh-ins are matched to the closest person. Only the person marked (Me) is sent to Health Connect.", 12f, R.attr.bl_textMuted), lp(top = 12))
 
         col.addView(text("Appearance", 16f, R.attr.bl_text, bold = true), lp(top = 32))
         val current = ThemePrefs.get(this)
         for ((t, desc) in listOf(AppTheme.COLOURFUL to "Blob colours and a soft gradient", AppTheme.CALM to "Neutral greys with soft blob colours", AppTheme.DARK to "Easy on the eyes at night")) {
             col.addView(themeRow(t, desc, t == current))
         }
-        col.addView(text(if (mode == PeopleMode.SOLO) "Weigh-ins far from your weight are held back and ask “Whose?”, so guests and bags never reach Health Connect."
-            else "Weigh-ins are matched to the closest person. Only the person marked (Me) is sent to Health Connect.", 12f, R.attr.bl_textMuted), lp(top = 12))
     }
 
     private fun modeControl(mode: PeopleMode, db: Db) = LinearLayout(this).apply {
