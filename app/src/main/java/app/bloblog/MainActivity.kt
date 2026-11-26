@@ -7,67 +7,68 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
+import android.view.Gravity
 import android.view.View
-import android.widget.ArrayAdapter
-import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.YearMonth
+import java.time.ZoneId
 import java.util.Locale
 
-/** Readings screen (SPEC screen 4). */
+/** Home: person view (spec §5.1). */
 class MainActivity : ComponentActivity() {
-    private lateinit var status: TextView
-    private lateinit var allow: Button
-    private lateinit var hcBanner: TextView
-    private lateinit var hcConnect: Button
-    private lateinit var empty: TextView
-    private lateinit var list: ListView
-    private val fmt = SimpleDateFormat("EEE d MMM · HH:mm", Locale.getDefault())
-    private var shown = emptyList<Reading>()
+    private val zone = ZoneId.systemDefault()
+    private val dayFmt = java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)
     private var setupShowing = false
     private var askedNotifications = false
+    private var hcAvailable = false
+    private var hcConnected = false
+    private var tab = 0L // person id; -1 is Compare (Task 8)
+    internal var range = Range.MONTH
+    private var month: YearMonth? = null
+    private var shownPts = emptyList<Pt>()
+    private var person: Person? = null
 
-    private val hcPermission = registerForActivityResult(PermissionController.createRequestPermissionResultContract()) { refresh() }
+    private val hcPermission = registerForActivityResult(PermissionController.createRequestPermissionResultContract()) {
+        lifecycleScope.launch { checkHc(); render() }
+    }
     private val bluetoothPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-        scanState = Scanner.start(this); refresh()
+        scanState = Scanner.start(this); render()
     }
     // Android throttles >5 scan starts per 30 s and a throttled scan silently stops background capture,
-    // so start the scan only on resume and on permission grant, never from refresh().
+    // so start the scan only on resume and on permission grant, never from render().
     private var scanState = Scanner.State.NO_PERMISSION
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        applyAppTheme()
         super.onCreate(savedInstanceState)
-        title = "Readings"
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        status = TextView(this).apply { setPadding(pad, pad, pad, pad / 2) }
-        allow = Button(this).apply {
-            text = "Allow Bluetooth"
-            setOnClickListener { bluetoothPermission.launch(Manifest.permission.BLUETOOTH_SCAN) }
+        setContentView(R.layout.activity_main)
+        findViewById<RecyclerView>(R.id.list).layoutManager = LinearLayoutManager(this)
+        savedInstanceState?.let { s ->
+            tab = s.getLong("tab")
+            range = Range.valueOf(s.getString("range") ?: Range.MONTH.name)
+            month = s.getString("month")?.let { YearMonth.parse(it) }
         }
-        hcBanner = TextView(this).apply { setPadding(pad, pad / 2, pad, pad / 2) }
-        hcConnect = Button(this).apply {
-            text = "Connect"
-            setOnClickListener { hcPermission.launch(HealthConnect.PERMISSIONS) }
-        }
-        empty = TextView(this).apply { text = "No weigh-ins yet. Step on the scale."; setPadding(pad, pad, pad, pad) }
-        list = ListView(this).apply { setOnItemClickListener { _, _, i, _ -> choose(shown[i].id) } }
-        setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            fitsSystemWindows = true
-            addView(status); addView(allow); addView(hcBanner); addView(hcConnect); addView(empty); addView(list)
-        })
         if (savedInstanceState == null) openRequested(intent)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong("tab", tab)
+        outState.putString("range", range.name)
+        month?.let { outState.putString("month", it.toString()) }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -78,49 +79,140 @@ class MainActivity : ComponentActivity() {
     /** Opened from the "Whose weigh-in?" notification. */
     private fun openRequested(intent: Intent) {
         val id = intent.getLongExtra(Notifications.EXTRA_READING_ID, -1)
-        if (id >= 0) choose(id)
+        if (id >= 0) openRowSheet(id)
     }
 
-    // shortcut: list refreshes only when the screen is opened or resumed, add live updates if that gets annoying.
+    // shortcut: the page refreshes only when the screen is opened or resumed (live updates are a later task).
     override fun onResume() {
         super.onResume()
         scanState = Scanner.start(this)
-        refresh()
-        lifecycleScope.launch { HealthConnect.syncPending(this@MainActivity); refresh() }
+        render()
+        lifecycleScope.launch { HealthConnect.syncPending(this@MainActivity); checkHc(); render() }
     }
 
-    private fun refresh() {
+    private suspend fun checkHc() {
+        hcAvailable = HealthConnect.client(this) != null
+        hcConnected = hcAvailable && HealthConnect.hasPermission(this)
+    }
+
+    internal fun selectTab(personId: Long) { tab = personId; month = null; render() }
+
+    private fun render() {
         val db = Db(this)
         if (db.me() == null) showSetup(db)
-        val state = scanState
-        status.text = when (state) {
-            Scanner.State.LISTENING -> "Listening for your scale, even when Blob-log is closed."
-            Scanner.State.NO_PERMISSION -> "Blob-log listens for your scale in the background."
-            Scanner.State.BLUETOOTH_OFF -> "Bluetooth is off. Turn it on, then reopen Blob-log."
-            Scanner.State.FAILED -> "Couldn't start listening. Reopen Blob-log to try again."
-        }
-        allow.visibility = if (state == Scanner.State.NO_PERMISSION) View.VISIBLE else View.GONE
-        if (Build.VERSION.SDK_INT >= 33 && state == Scanner.State.LISTENING && !askedNotifications &&
+        if (Build.VERSION.SDK_INT >= 33 && scanState == Scanner.State.LISTENING && !askedNotifications &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             askedNotifications = true
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-        lifecycleScope.launch {
-            val available = HealthConnect.client(this@MainActivity) != null
-            val connected = available && HealthConnect.hasPermission(this@MainActivity)
-            hcBanner.visibility = if (connected) View.GONE else View.VISIBLE
-            hcBanner.text = if (available) "Health Connect isn't connected. Readings are saved here but not sent."
-            else "Health Connect isn't available on this phone."
-            hcConnect.visibility = if (available && !connected) View.VISIBLE else View.GONE
+        val people = db.people()
+        val p = people.firstOrNull { it.id == tab } ?: people.firstOrNull().also { tab = it?.id ?: 0 }
+        person = p
+        showChips(people, p)
+        showStrip(db, p)
+        val list = findViewById<RecyclerView>(R.id.list)
+        if (p == null) { list.adapter = null; return }
+
+        val now = System.currentTimeMillis()
+        val pts = db.readingsFor(p.id, rangeStart(range, now, zone), now + 1).map { Pt(it.takenAt, it.weightCentiKg) }
+        shownPts = pts
+        showHeadline(db, p, null)
+
+        val months = db.months(p.id, zone)
+        val items = mutableListOf<HomeItem>(HomeItem.Graph(pts, range, p, db.startWeight(p.id), now))
+        if (months.isEmpty()) items.add(HomeItem.Empty) else {
+            val m = month?.takeIf { it in months } ?: months.last()
+            month = m
+            val rows = db.historyMonth(p.id, m, zone)
+            items.add(HomeItem.HistoryHeader(rows.count { it.personId != null }, m))
+            items.add(HomeItem.Months(months, m))
+            rows.forEachIndexed { i, r ->
+                val last = i == rows.lastIndex
+                items.add(if (r.personId == null) HomeItem.WhoseRow(r, last) else HomeItem.Row(r, p.isMe && !r.written, last))
+            }
         }
-        shown = db.latest()
-        val names = db.people().associate { it.id to it.name }
-        val rows = shown.map {
-            "${fmt.format(Date(it.takenAt))}    %.2f kg    ${names[it.personId] ?: "Who's this?"}".format(it.weightCentiKg / 100.0)
+        list.adapter = HomeAdapter(items,
+            onRange = { range = it; render() },
+            onMonth = { month = it; render() },
+            onRow = ::openRowSheet,
+            onScrub = { showHeadline(db, p, it) })
+    }
+
+    private fun showChips(people: List<Person>, current: Person?) {
+        val row = findViewById<LinearLayout>(R.id.chips)
+        row.removeAllViews()
+        fun chip(label: String, selected: Boolean, onClick: () -> Unit) = TextView(this).apply {
+            text = label; textSize = 14f; gravity = Gravity.CENTER
+            setTextColor(token(if (selected) R.attr.bl_onPersonSelected else R.attr.bl_onGrey))
+            fill(if (selected) R.attr.bl_personSelectedBg else R.attr.bl_surfaceGrey, 20, inset = true)
+            setOnClickListener { onClick() }
+            row.addView(this, LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginEnd = dp(8) })
         }
-        empty.visibility = if (rows.isEmpty()) View.VISIBLE else View.GONE
-        list.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, rows)
+        people.forEach { p -> chip(p.name, p.id == current?.id) { selectTab(p.id) } }
+        chip("Compare", false) { } // Task 8
+        TextView(this).apply {
+            text = "⚙"; textSize = 18f; gravity = Gravity.CENTER
+            setTextColor(token(R.attr.bl_onGrey)); fill(R.attr.bl_surfaceGrey, 20, inset = true)
+            contentDescription = "Settings"
+            setOnClickListener { } // Task 9
+            row.addView(this, LinearLayout.LayoutParams(dp(48), dp(48)))
+        }
+    }
+
+    private fun showStrip(db: Db, p: Person?) {
+        val unassigned = db.unassigned()
+        val newest = unassigned.lastOrNull()
+        val notice = noticeFor(scanState, unassigned.size, hcAvailable, hcConnected, p?.isMe == true)
+        val strip = findViewById<View>(R.id.strip)
+        strip.visibility = if (notice == null) View.GONE else View.VISIBLE
+        if (notice == null) return
+        val button = findViewById<TextView>(R.id.stripButton)
+        val chevron = findViewById<View>(R.id.stripChevron)
+        val label = when (notice) {
+            Notice.NEED_BT_PERMISSION -> "Blob-log listens for your scale in the background."
+            Notice.BT_OFF -> "Bluetooth is off. Turn it on, then reopen Blob-log."
+            Notice.LISTEN_FAILED -> "Couldn't start listening. Reopen Blob-log to try again."
+            Notice.WHOSE -> if (unassigned.size == 1) "Whose is %.2f kg on %s?".format(Locale.ROOT, newest!!.weightCentiKg / 100.0,
+                dayFmt.format(Instant.ofEpochMilli(newest.takenAt).atZone(zone))) else "${unassigned.size} weigh-ins need a name"
+            Notice.HC_NOT_CONNECTED -> "Health Connect isn't connected. Readings are saved here but not sent."
+        }
+        val buttonText = when (notice) { Notice.NEED_BT_PERMISSION -> "Allow Bluetooth"; Notice.HC_NOT_CONNECTED -> "Connect"; else -> null }
+        findViewById<ImageView>(R.id.stripIcon).setImageResource(when (notice) {
+            Notice.NEED_BT_PERMISSION, Notice.BT_OFF -> R.drawable.blob_bluetooth
+            Notice.LISTEN_FAILED -> R.drawable.blob_sleep
+            Notice.WHOSE -> R.drawable.blob_question
+            Notice.HC_NOT_CONNECTED -> R.drawable.blob_heart
+        })
+        findViewById<TextView>(R.id.stripText).text = label
+        button.text = buttonText
+        button.visibility = if (buttonText == null) View.GONE else View.VISIBLE
+        button.fill(R.attr.bl_select, 20, inset = true)
+        button.setOnClickListener {
+            if (notice == Notice.HC_NOT_CONNECTED) hcPermission.launch(HealthConnect.PERMISSIONS)
+            else bluetoothPermission.launch(Manifest.permission.BLUETOOTH_SCAN)
+        }
+        chevron.visibility = if (notice == Notice.WHOSE) View.VISIBLE else View.GONE
+        strip.setOnClickListener { if (notice == Notice.WHOSE) openRowSheet(newest!!.id) }
+        strip.isClickable = notice == Notice.WHOSE
+    }
+
+    /** Headline: the person's latest weigh-in, or the weigh-in under the finger while scrubbing ([scrub] is an index into [shownPts]). */
+    private fun showHeadline(db: Db, p: Person, scrub: Int?) {
+        val weight = findViewById<TextView>(R.id.headlineWeight)
+        val line2 = findViewById<TextView>(R.id.headlineLine2)
+        findViewById<TextView>(R.id.headlineName).text = p.name
+        val point = scrub?.let { shownPts.getOrNull(it) }
+        val latest = point ?: db.readingsFor(p.id, 0, Long.MAX_VALUE).lastOrNull()?.let { Pt(it.takenAt, it.weightCentiKg) }
+        weight.setTextColor(token(if (point != null) p.textAttr() else R.attr.bl_text))
+        if (latest == null) { weight.text = "–"; line2.text = "No weigh-ins yet"; return }
+        weight.text = "%.2f kg".format(Locale.ROOT, latest.centi / 100.0)
+        val at = Instant.ofEpochMilli(latest.at).atZone(zone)
+        if (point != null) { line2.text = java.time.format.DateTimeFormatter.ofPattern("EEE d MMM · HH:mm", Locale.ENGLISH).format(at); return }
+        val week = db.readingsFor(p.id, latest.at - 7 * 86_400_000L + 1, latest.at + 1)
+        val avg = week.map { it.weightCentiKg / 100.0 }.average()
+        val day = if (at.toLocalDate() == java.time.LocalDate.now(zone)) "today" else dayFmt.format(at)
+        line2.text = "$day · 7-day avg %.2f".format(Locale.ROOT, avg)
     }
 
     private fun showSetup(db: Db) {
@@ -133,8 +225,7 @@ class MainActivity : ComponentActivity() {
         }
         val form = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val pad = (16 * resources.displayMetrics.density).toInt()
-            setPadding(pad, pad, pad, 0)
+            setPadding(dp(16), dp(16), dp(16), 0)
             addView(name); addView(weight)
         }
         val dialog = AlertDialog.Builder(this)
@@ -152,11 +243,14 @@ class MainActivity : ComponentActivity() {
                     db.addPerson(name.text.toString().trim(), Math.round(kg * 100).toInt(), isMe = true)
                     setupShowing = false
                     dialog.dismiss()
-                    refresh()
+                    render()
                 }
             }
         }
     }
+
+    /** Task 7 replaces this with the row sheet. */
+    private fun openRowSheet(readingId: Long) = choose(readingId)
 
     private fun choose(readingId: Long) {
         val people = Db(this).people()
@@ -190,6 +284,6 @@ class MainActivity : ComponentActivity() {
 
     private fun done(readingId: Long) {
         Notifications.cancel(this, readingId)
-        refresh()
+        render()
     }
 }
