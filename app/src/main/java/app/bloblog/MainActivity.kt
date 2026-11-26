@@ -1,7 +1,6 @@
 package app.bloblog
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,10 +8,8 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.text.InputType
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -102,8 +99,8 @@ class MainActivity : ComponentActivity() {
     private val savedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             render()
-            val db = Db(this@MainActivity)
-            val r = db.reading(intent.getLongExtra("reading_id", -1)) ?: return
+            val db = Db.get(this@MainActivity)
+            val r = db.reading(intent.getLongExtra(Notifications.EXTRA_READING_ID, -1)) ?: return
             val p = db.people().firstOrNull { it.id == r.personId } ?: return // unassigned: no message (spec §5.6)
             if (db.readingsFor(p.id, 0, Long.MAX_VALUE).size == 1) rows.showFirst(p) else rows.showSaved(p.name, r.weightCentiKg)
         }
@@ -143,7 +140,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun render() {
-        val db = Db(this)
+        val db = Db.get(this)
         if (db.me() == null) showSetup(db)
         if (Build.VERSION.SDK_INT >= 33 && scanState == Scanner.State.LISTENING && !askedNotifications &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -292,36 +289,6 @@ class MainActivity : ComponentActivity() {
     private fun showSetup(db: Db) {
         if (setupShowing) return
         setupShowing = true
-        val name = EditText(this).apply { hint = "Name" }
-        val weight = EditText(this).apply {
-            hint = "Current weight (kg)"
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        }
-        val form = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), 0)
-            addView(ImageView(this@MainActivity).apply { setImageResource(R.drawable.blob_wave); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },
-                LinearLayout.LayoutParams(dp(64), dp(64)).apply { gravity = Gravity.CENTER_HORIZONTAL })
-            addView(name); addView(weight)
-        }
-        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("Who uses the scale?")
-            .setView(form)
-            .setPositiveButton("Next", null) // real handler below, so invalid input keeps the dialog open
-            .setCancelable(false)
-            .show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val kg = weight.text.toString().replace(',', '.').toDoubleOrNull()
-            when {
-                name.text.isBlank() -> name.error = "Enter a name."
-                kg == null || kg < 20 || kg > 250 -> weight.error = "Enter a weight between 20 and 250 kg."
-                else -> {
-                    db.addPerson(name.text.toString().trim(), Math.round(kg * 100).toInt(), isMe = true)
-                    setupShowing = false
-                    dialog.dismiss()
-                    render()
-                }
-            }
-        }
+        personDialog(null, firstPerson = true) { _, _ -> setupShowing = false; render() }
     }
 }

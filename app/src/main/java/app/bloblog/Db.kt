@@ -123,10 +123,6 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
         writableDatabase.execSQL("UPDATE reading SET hc_written = ? WHERE id = ?", arrayOf(if (written) 1 else 0, readingId))
     }
 
-    fun isWritten(readingId: Long): Boolean =
-        readableDatabase.rawQuery("SELECT hc_written FROM reading WHERE id = ?", arrayOf(readingId.toString()))
-            .use { it.moveToFirst() && it.getInt(0) == 1 }
-
     fun delete(readingId: Long) {
         writableDatabase.delete("reading", "id = ?", arrayOf(readingId.toString()))
     }
@@ -136,8 +132,18 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
         return readings("WHERE person_id = ? AND hc_written = 0", me.id)
     }
 
-    private companion object {
-        const val PERSON_TABLE = "CREATE TABLE person (id INTEGER PRIMARY KEY, name TEXT NOT NULL, " +
+    companion object {
+        @Volatile private var shared: Db? = null
+
+        fun get(context: Context): Db = shared ?: synchronized(this) {
+            shared ?: Db(context.applicationContext).also { shared = it }
+        }
+
+        /** Tests delete the database file; drop the shared handle so the next [get] reopens it. */
+        @androidx.annotation.VisibleForTesting
+        fun resetForTests() = synchronized(this) { shared?.close(); shared = null }
+
+        private const val PERSON_TABLE = "CREATE TABLE person (id INTEGER PRIMARY KEY, name TEXT NOT NULL, " +
             "start_weight_centi INTEGER NOT NULL, is_me INTEGER NOT NULL)"
     }
 }

@@ -21,6 +21,7 @@ import java.util.Locale
 interface HcPort {
     suspend fun remove(readingId: Long): Boolean
     suspend fun write(r: Reading)
+    suspend fun canWrite(): Boolean
 }
 
 /** Row sheet, delete confirmation and toasts (spec §5.4 to §5.6). [onChanged] runs after a move or delete so Home can refresh. */
@@ -33,7 +34,7 @@ class RowActions(
     private fun kg(centi: Int) = "%.2f kg".format(Locale.ROOT, centi / 100.0)
 
     fun openRowSheet(readingId: Long) {
-        val db = Db(a)
+        val db = Db.get(a)
         val r = db.reading(readingId) ?: return
         val people = db.people()
         val owner = people.firstOrNull { it.id == r.personId }
@@ -90,7 +91,7 @@ class RowActions(
 
     /** [onKept] runs if the row stays (cancelled, or Health Connect failed). */
     fun confirmDelete(readingId: Long, onKept: () -> Unit = {}) {
-        val r = Db(a).reading(readingId) ?: return onKept()
+        val r = Db.get(a).reading(readingId) ?: return onKept()
         val title = LinearLayout(a).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(a.dp(24), a.dp(24), a.dp(24), 0)
@@ -112,20 +113,19 @@ class RowActions(
     }
 
     suspend fun moveReading(readingId: Long, toPersonId: Long): Boolean = HealthConnect.lock.withLock {
-        val db = Db(a)
-        if (db.reading(readingId) == null) return@withLock false
+        val db = Db.get(a)
+        val r = db.reading(readingId) ?: return@withLock false
         val to = db.people().firstOrNull { it.id == toPersonId } ?: return@withLock false
-        val wasWritten = db.isWritten(readingId)
-        if (wasWritten && !to.isMe && !hc.remove(readingId)) return@withLock hcFailed()
+        if (r.written && !to.isMe && !hc.remove(readingId)) return@withLock hcFailed()
         db.setPerson(readingId, toPersonId)
         if (to.isMe) HealthConnect.writeIfDue(a, hc, readingId)
         done(readingId)
     }
 
     suspend fun deleteReading(readingId: Long): Boolean = HealthConnect.lock.withLock {
-        val db = Db(a)
-        if (db.reading(readingId) == null) return@withLock false
-        if (db.isWritten(readingId) && !hc.remove(readingId)) return@withLock hcFailed()
+        val db = Db.get(a)
+        val r = db.reading(readingId) ?: return@withLock false
+        if (r.written && !hc.remove(readingId)) return@withLock hcFailed()
         db.delete(readingId)
         done(readingId)
     }

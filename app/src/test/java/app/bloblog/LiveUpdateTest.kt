@@ -21,7 +21,7 @@ class LiveUpdateTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Before fun freshDb() {
-        context.deleteDatabase("bloblog.db")
+        Db.resetForTests(); context.deleteDatabase("bloblog.db")
         Db(context).apply { addPerson("Julia", 6500, true); addPerson("Sam Lee", 5500, false) }
     }
 
@@ -32,7 +32,7 @@ class LiveUpdateTest {
 
 
     private fun send(c: ActivityController<MainActivity>, id: Long) {
-        context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
+        context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra(Notifications.EXTRA_READING_ID, id))
         shadowOf(android.os.Looper.getMainLooper()).idle()
     }
 

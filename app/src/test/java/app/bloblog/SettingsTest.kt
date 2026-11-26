@@ -25,7 +25,7 @@ class SettingsTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Before fun fresh() {
-        context.deleteDatabase("bloblog.db")
+        Db.resetForTests(); context.deleteDatabase("bloblog.db")
         ThemePrefs.set(context, AppTheme.COLOURFUL)
     }
 

@@ -18,7 +18,8 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-private class FakeHc(var removeOk: Boolean = true) : HcPort {
+private class FakeHc(var removeOk: Boolean = true, var canWrite: Boolean = true) : HcPort {
+    override suspend fun canWrite() = canWrite
     val calls = mutableListOf<String>()
     val written = mutableListOf<Long>()
     var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
@@ -35,7 +36,7 @@ class RowActionsTest {
     private lateinit var actions: RowActions
 
     @Before fun setUp() {
-        context.deleteDatabase("bloblog.db")
+        Db.resetForTests(); context.deleteDatabase("bloblog.db")
         Db(context).apply { addPerson("Julia", 6500, true); addPerson("Sam Lee", 5500, false) }
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         actions = RowActions(a, fake) { changed++ }
@@ -76,6 +77,21 @@ class RowActionsTest {
         assertTrue(actions.deleteReading(id))
         assertTrue(fake.calls.isEmpty())
         assertNull(Db(context).reading(id))
+    }
+
+    @Test fun deleteWhenHealthConnectGoneSucceeds() = runBlocking {
+        val id = add(julia, true)
+        val real = RowActions(Robolectric.buildActivity(MainActivity::class.java).setup().get(), hcPort(context)) { changed++ }
+        assertTrue(real.deleteReading(id))
+        assertNull(Db(context).reading(id))
+        assertNull(real.lastMessage)
+    }
+
+    @Test fun syncPendingSkipsWithoutPermission() = runBlocking {
+        add(julia, false)
+        fake.canWrite = false
+        HealthConnect.syncPending(context, fake)
+        assertTrue(fake.written.isEmpty())
     }
 
     @Test fun deleteWrittenRemovesFirst() = runBlocking {

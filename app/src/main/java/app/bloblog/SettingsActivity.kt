@@ -29,7 +29,7 @@ class SettingsActivity : ComponentActivity() {
         lifecycleScope.launch {
             val ok = withContext(Dispatchers.IO) {
                 runCatching {
-                    val csv = weighInsCsv(Db(this@SettingsActivity), ZoneId.systemDefault())
+                    val csv = weighInsCsv(Db.get(this@SettingsActivity), ZoneId.systemDefault())
                     contentResolver.openOutputStream(uri)!!.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
                 }.isSuccess
             }
@@ -50,7 +50,7 @@ class SettingsActivity : ComponentActivity() {
 
     private fun render() {
         col.removeAllViews()
-        val db = Db(this)
+        val db = Db.get(this)
         val mode = ModePrefs.get(this, db)
         val people = db.activePeople(mode)
         col.addView(text("Settings", 16f, R.attr.bl_text, bold = true))

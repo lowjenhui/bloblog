@@ -19,7 +19,7 @@ class CsvExportTest {
     private val utc: ZoneId = ZoneOffset.UTC
     private val head = "date,time,weight_kg,person,in_health_connect\n"
 
-    @Before fun fresh() { context.deleteDatabase("bloblog.db") }
+    @Before fun fresh() { Db.resetForTests(); context.deleteDatabase("bloblog.db") }
 
     private fun add(at: Long, centi: Int, person: Long?, written: Boolean = false) {
         Db(context).writableDatabase.insert("reading", null, ContentValues().apply {

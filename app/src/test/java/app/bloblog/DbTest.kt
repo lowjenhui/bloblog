@@ -21,7 +21,7 @@ class DbTest {
     private val packet = ScalePacket("id", 0x23, 6765)
     private val raw = byteArrayOf(1, 2)
 
-    @Before fun freshDb() { context.deleteDatabase("bloblog.db") }
+    @Before fun freshDb() { Db.resetForTests(); context.deleteDatabase("bloblog.db") }
 
     @Test fun dedupesAcrossInstances() {
         assertTrue(Db(context).saveIfNew(packet, 0, raw) != null)

@@ -25,7 +25,7 @@ class ModeTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Before fun fresh() {
-        context.deleteDatabase("bloblog.db")
+        Db.resetForTests(); context.deleteDatabase("bloblog.db")
         context.getSharedPreferences("settings", Context.MODE_PRIVATE).edit().clear().commit()
     }
 

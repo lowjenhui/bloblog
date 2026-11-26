@@ -56,19 +56,11 @@ class ScanReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val db = Db(context)
+                val db = Db.get(context)
                 for (r in results) {
-                    val now = System.currentTimeMillis()
                     val raw = r.scanRecord?.getManufacturerSpecificData(ScalePacket.MANUFACTURER_ID) ?: continue
                     val p = ScalePacket.parse(raw) ?: continue
-                    val id = db.saveIfNew(p, now, raw) ?: continue
-                    Log.i("Bloblog", "saved ${p.weightCentiKg / 100.0} kg")
-                    val personId = assign(p.weightCentiKg, db.refs(now, ModePrefs.get(context, db)))
-                    db.setPerson(id, personId)
-                    val reading = db.reading(id) ?: continue
-                    if (personId == null) Notifications.unassigned(context, reading)
-                    else HealthConnect.lock.withLock { HealthConnect.writeIfDue(context, hcPort(context), id) }
-                    context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
+                    handleWeighIn(context, db, p, raw, System.currentTimeMillis())
                 }
             } catch (e: Exception) {
                 Log.e("Bloblog", "capture failed", e)
@@ -77,6 +69,19 @@ class ScanReceiver : BroadcastReceiver() {
             }
         }
     }
+}
+
+/** Saves, assigns and (for the owner) sends one weigh-in. Returns the reading id, or null if it was not saved. */
+suspend fun handleWeighIn(context: Context, db: Db, p: ScalePacket, raw: ByteArray, nowMs: Long, hc: HcPort = hcPort(context)): Long? {
+    val id = db.saveIfNew(p, nowMs, raw) ?: return null
+    Log.i("Bloblog", "saved ${p.weightCentiKg / 100.0} kg")
+    val personId = assign(p.weightCentiKg, db.refs(nowMs, ModePrefs.get(context, db)))
+    db.setPerson(id, personId)
+    val reading = db.reading(id) ?: return null
+    if (personId == null) Notifications.unassigned(context, reading)
+    else HealthConnect.lock.withLock { HealthConnect.writeIfDue(context, hc, id) }
+    context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra(Notifications.EXTRA_READING_ID, id))
+    return id
 }
 
 /** System-held scans don't survive a reboot or an app update, so re-register them. */

@@ -30,7 +30,7 @@ class HomeTest {
     private val hour = 3_600_000L
     private val day = 24 * hour
 
-    @Before fun freshDb() { context.deleteDatabase("bloblog.db") }
+    @Before fun freshDb() { Db.resetForTests(); context.deleteDatabase("bloblog.db") }
 
     private fun db() = Db(context).also { if (it.people().isEmpty()) { it.addPerson("Julia", 6500, true); it.addPerson("Sam Lee", 5500, false) } }
 
@@ -60,6 +60,21 @@ class HomeTest {
     }
 
     private fun listTexts(a: MainActivity) = texts(a.findViewById(R.id.list)).map { it.text.toString() }
+
+    @Test fun firstLaunchSetupCreatesOwner() {
+        Robolectric.buildActivity(MainActivity::class.java).setup()
+        val d = org.robolectric.shadows.ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        val edits = mutableListOf<android.widget.EditText>()
+        fun walk(v: View) { if (v is android.widget.EditText) edits += v; if (v is ViewGroup) for (i in 0 until v.childCount) walk(v.getChildAt(i)) }
+        walk(d.window!!.decorView)
+        edits.first { it.hint == "Name" }.setText("Julia")
+        edits.first { it.hint == "Current weight (kg)" }.setText("66.3")
+        d.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
+        val me = Db.get(context).people().single()
+        assertTrue(me.isMe)
+        assertEquals("Julia", me.name)
+        assertEquals(6630, Db.get(context).startWeight(me.id))
+    }
 
     @Test fun historyNewestFirst() {
         val p = db().me()!!.id
