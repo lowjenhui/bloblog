@@ -142,7 +142,12 @@ class RowActions(
         return true
     }
 
+    /** The last message this screen chose to show; tests read it instead of Material's view internals. */
+    var lastMessage: String? = null
+        private set
+
     fun toast(msg: String, sticker: Int? = R.drawable.blob_scale) {
+        lastMessage = msg
         val bar = Snackbar.make(a.findViewById(android.R.id.content), msg, 3000)
         bar.view.background = GradientDrawable().apply {
             setColor(a.token(R.attr.bl_toast)); setStroke(a.dp(1), a.token(R.attr.bl_toastStroke)); cornerRadius = a.dp(16).toFloat()

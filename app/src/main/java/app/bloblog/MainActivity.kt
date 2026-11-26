@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
     private var month: YearMonth? = null
     private var shownPts = emptyList<Pt>()
     private var person: Person? = null
-    private val rows = RowActions(this) { render() }
+    internal val rows = RowActions(this) { render() }
 
     private val hcPermission = registerForActivityResult(PermissionController.createRequestPermissionResultContract()) {
         lifecycleScope.launch { checkHc(); render() }

@@ -3,9 +3,6 @@ package app.bloblog
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -33,11 +30,6 @@ class LiveUpdateTest {
         put("person_id", personId); put("hc_written", 1)
     })
 
-    private fun snackbarText(v: View): String? {
-        if (v is TextView && v.id == com.google.android.material.R.id.snackbar_text) return v.text.toString()
-        if (v is ViewGroup) for (i in 0 until v.childCount) snackbarText(v.getChildAt(i))?.let { return it }
-        return null
-    }
 
     private fun send(c: ActivityController<MainActivity>, id: Long) {
         context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
@@ -49,21 +41,21 @@ class LiveUpdateTest {
         val julia = Db(context).people().first().id
         seed(julia)
         send(c, seed(julia))
-        assertEquals("Saved 65.70 kg for Julia", snackbarText(c.get().findViewById(android.R.id.content)))
+        assertEquals("Saved 65.70 kg for Julia", c.get().rows.lastMessage)
     }
 
     @Test fun unassignedBroadcastNoSnackbar() {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
         send(c, seed(null))
-        assertNull(snackbarText(c.get().findViewById(android.R.id.content)))
+        assertNull(c.get().rows.lastMessage)
     }
 
     @Test fun firstWeighInMessage() {
         val c = Robolectric.buildActivity(MainActivity::class.java).setup()
         send(c, seed(Db(context).people().first().id))
-        assertEquals("Your first weigh-in!", snackbarText(c.get().findViewById(android.R.id.content)))
+        assertEquals("Your first weigh-in!", c.get().rows.lastMessage)
         send(c, seed(Db(context).people().last().id))
-        assertEquals("Sam Lee's first weigh-in!", snackbarText(c.get().findViewById(android.R.id.content)))
+        assertEquals("Sam Lee's first weigh-in!", c.get().rows.lastMessage)
     }
 
     @Test fun laterWeighInSavedMessage() {
@@ -71,6 +63,6 @@ class LiveUpdateTest {
         val julia = Db(context).people().first().id
         seed(julia)
         send(c, seed(julia))
-        assertEquals("Saved 65.70 kg for Julia", snackbarText(c.get().findViewById(android.R.id.content)))
+        assertEquals("Saved 65.70 kg for Julia", c.get().rows.lastMessage)
     }
 }

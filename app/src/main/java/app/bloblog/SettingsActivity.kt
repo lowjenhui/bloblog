@@ -21,7 +21,7 @@ import java.util.Locale
 
 /** Settings: People, Appearance and Data (spec §5.3). */
 class SettingsActivity : ComponentActivity() {
-    private val rows = RowActions(this) {}
+    internal val rows = RowActions(this) {}
     private lateinit var col: LinearLayout
     private var fileName = ""
     private val save = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->

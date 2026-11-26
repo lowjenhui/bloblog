@@ -48,7 +48,7 @@ class SettingsTest {
         shadowOf(android.os.Looper.getMainLooper()).idle()
         assertEquals(2, Db(context).people().size)
         assertNull(Db(context).unassigned().firstOrNull())
-        assertNotNull(text(root(a), "Matched 1 earlier weigh-in to Sam Lee"))
+        assertEquals("Matched 1 earlier weigh-in to Sam Lee", a.rows.lastMessage)
     }
 
     @Test fun addHiddenAtTwo() {
