@@ -15,6 +15,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 
 const val ACTION_READING_SAVED = "app.bloblog.READING_SAVED"
 
@@ -66,7 +67,7 @@ class ScanReceiver : BroadcastReceiver() {
                     db.setPerson(id, personId)
                     val reading = db.reading(id) ?: continue
                     if (personId == null) Notifications.unassigned(context, reading)
-                    else if (personId == db.me()?.id) HealthConnect.write(context, reading)
+                    else HealthConnect.lock.withLock { HealthConnect.writeIfDue(context, hcPort(context), id) }
                     context.sendBroadcast(Intent(ACTION_READING_SAVED).setPackage(context.packageName).putExtra("reading_id", id))
                 }
             } catch (e: Exception) {

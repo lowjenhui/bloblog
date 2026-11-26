@@ -62,4 +62,10 @@ class TrendChartViewTest {
         val widest = p.measureText("67.0 kg")
         assertTrue(v.pointX(0) >= widest)
     }
+
+    @Test fun averageUsesWeekBeforeRangeStart() {
+        val v = view()
+        v.showPerson(listOf(Pt(now - 8 * day, 6000), Pt(now - 2 * day, 7000)), Range.WEEK, R.attr.bl_ownerLine, R.attr.bl_ownerDot, now, 6500)
+        assertEquals("Weight trend, week. 1 weigh-ins from 70.0 to 70.0 kg. 7-day average now 65.00 kg.", v.contentDescription)
+    }
 }

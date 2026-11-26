@@ -2,6 +2,19 @@
 <resources>
     <style name="Theme.Bloblog.Colourful" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowBackground">#ffffff</item>
+        <item name="colorPrimary">#3d2f55</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#3fe3f2</item>
+        <item name="colorOnPrimaryContainer">#3d2f55</item>
+        <item name="colorSecondary">#3d2f55</item>
+        <item name="colorOnSecondary">#ffffff</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorOnSurface">#3d2f55</item>
+        <item name="colorOnSurfaceVariant">#6b6680</item>
+        <item name="colorSurfaceVariant">#f1f0f4</item>
+        <item name="colorSurfaceContainer">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
         <item name="bl_background">#ffffff</item>
         <item name="bl_text">#3d2f55</item>
         <item name="bl_textMuted">#6b6680</item>
@@ -32,6 +45,19 @@
     </style>
     <style name="Theme.Bloblog.Calm" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowBackground">#ffffff</item>
+        <item name="colorPrimary">#1f2430</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#c4ecf0</item>
+        <item name="colorOnPrimaryContainer">#1f2430</item>
+        <item name="colorSecondary">#1f2430</item>
+        <item name="colorOnSecondary">#ffffff</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorOnSurface">#1f2430</item>
+        <item name="colorOnSurfaceVariant">#5f6573</item>
+        <item name="colorSurfaceVariant">#f2f3f5</item>
+        <item name="colorSurfaceContainer">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
         <item name="bl_background">#ffffff</item>
         <item name="bl_text">#1f2430</item>
         <item name="bl_textMuted">#5f6573</item>
@@ -62,6 +88,19 @@
     </style>
     <style name="Theme.Bloblog.Dark" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowBackground">#16131d</item>
+        <item name="colorPrimary">#5fd8e8</item>
+        <item name="colorOnPrimary">#16131d</item>
+        <item name="colorPrimaryContainer">#5fd8e8</item>
+        <item name="colorOnPrimaryContainer">#16131d</item>
+        <item name="colorSecondary">#5fd8e8</item>
+        <item name="colorOnSecondary">#16131d</item>
+        <item name="colorSurface">#16131d</item>
+        <item name="colorOnSurface">#f1eef7</item>
+        <item name="colorOnSurfaceVariant">#a9a3b8</item>
+        <item name="colorSurfaceVariant">#221e2b</item>
+        <item name="colorSurfaceContainer">#16131d</item>
+        <item name="colorSurfaceContainerLow">#16131d</item>
+        <item name="colorSurfaceContainerHigh">#16131d</item>
         <item name="bl_background">#16131d</item>
         <item name="bl_text">#f1eef7</item>
         <item name="bl_textMuted">#a9a3b8</item>

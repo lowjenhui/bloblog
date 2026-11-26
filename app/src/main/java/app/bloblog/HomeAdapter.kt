@@ -83,7 +83,7 @@ class HomeAdapter(
             is HomeItem.Months -> months(c, item)
             is HomeItem.Row -> row(c, item.reading, item.last, whose = false, notSent = item.notSent)
             is HomeItem.WhoseRow -> row(c, item.reading, item.last, whose = true, notSent = false).also {
-                (box.layoutParams as RecyclerView.LayoutParams).topMargin = -1 // covers the divider above
+                (box.layoutParams as RecyclerView.LayoutParams).topMargin = -c.dp(1) // covers the divider above
             }
             HomeItem.Empty -> empty(c)
         })
@@ -122,7 +122,8 @@ class HomeAdapter(
             g.people.forEachIndexed { k, p ->
                 val change = g.series[k][i].second
                 val start = sb.length + 1
-                sb.append("\n").append(summaryLine(p.name, change?.let { avg7At(g.pts[k], endOfDay) }, change, past = idx != null))
+                sb.append("\n").append(if (change == null && g.pts[k].isNotEmpty()) "${p.name} has no weigh-ins that week."
+                    else summaryLine(p.name, change?.let { avg7At(g.pts[k], endOfDay) }, change, past = idx != null))
                 sb.setSpan(StyleSpan(Typeface.BOLD), start, start + p.name.length, 0)
                 sb.setSpan(ForegroundColorSpan(c.token(p.textAttr())), start, start + p.name.length, 0)
             }
@@ -186,6 +187,7 @@ class HomeAdapter(
         val line = LinearLayout(c).apply {
             gravity = Gravity.CENTER_VERTICAL
             setPadding(c.dp(16), c.dp(12), c.dp(16), c.dp(12))
+            minimumHeight = c.dp(48)
             if (whose) fill(R.attr.bl_notice)
         }
         if (whose) line.addView(ImageView(c).apply { setImageResource(R.drawable.blob_question); importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO },

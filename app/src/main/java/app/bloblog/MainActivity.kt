@@ -167,14 +167,15 @@ class MainActivity : ComponentActivity() {
             val pts = people.map { q -> db.readingsFor(q.id, from - 7 * 86_400_000L, now + 1).map { Pt(it.takenAt, it.weightCentiKg) }
                 .let { l -> if (l.any { it.at >= from }) l else emptyList() } }
             val series = pts.map { compareSeries(it, from, now, zone) }
-            list.adapter = HomeAdapter(listOf(HomeItem.Compare(range, people, pts, series, from, zone)), { range = it; render() }, {}, {}, {})
+            keepScroll(list, HomeAdapter(listOf(HomeItem.Compare(range, people, pts, series, from, zone)), { range = it; render() }, {}, {}, {}))
             return
         }
         if (p == null) { list.adapter = null; return }
 
         val now = System.currentTimeMillis()
-        val pts = db.readingsFor(p.id, rangeStart(range, now, zone), now + 1).map { Pt(it.takenAt, it.weightCentiKg) }
-        shownPts = pts
+        val from = rangeStart(range, now, zone)
+        val pts = db.readingsFor(p.id, from - 7 * 86_400_000L, now + 1).map { Pt(it.takenAt, it.weightCentiKg) } // chart trims to the range
+        shownPts = pts.filter { it.at >= from }
         showHeadline(db, p, null)
 
         val months = db.months(p.id, zone)
@@ -190,11 +191,18 @@ class MainActivity : ComponentActivity() {
                 items.add(if (r.personId == null) HomeItem.WhoseRow(r, last) else HomeItem.Row(r, p.isMe && !r.written, last))
             }
         }
-        list.adapter = HomeAdapter(items,
+        keepScroll(list, HomeAdapter(items,
             onRange = { range = it; render() },
             onMonth = { month = it; render() },
             onRow = rows::openRowSheet,
-            onScrub = { showHeadline(db, p, it) })
+            onScrub = { showHeadline(db, p, it) }))
+    }
+
+    /** A new adapter would otherwise send the list back to the top. */
+    private fun keepScroll(list: RecyclerView, adapter: HomeAdapter) {
+        val state = list.layoutManager?.onSaveInstanceState()
+        list.adapter = adapter
+        list.layoutManager?.onRestoreInstanceState(state)
     }
 
     private fun showChips(people: List<Person>, current: Person?, mode: PeopleMode) {
@@ -296,7 +304,7 @@ class MainActivity : ComponentActivity() {
                 LinearLayout.LayoutParams(dp(64), dp(64)).apply { gravity = Gravity.CENTER_HORIZONTAL })
             addView(name); addView(weight)
         }
-        val dialog = AlertDialog.Builder(this)
+        val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
             .setTitle("Who uses the scale?")
             .setView(form)
             .setPositiveButton("Next", null) // real handler below, so invalid input keeps the dialog open

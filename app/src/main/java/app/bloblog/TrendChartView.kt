@@ -48,8 +48,10 @@ class TrendChartView(context: Context, attrs: AttributeSet? = null) : View(conte
         val zone = ZoneId.systemDefault()
         start = rangeStart(range, nowMs, zone); end = nowMs
         this.pts = pts.filter { it.at in start..end }.sortedBy { it.at }
-        segs = if (range == Range.DAY) emptyList() else avg7Segments(this.pts)
-        avgByAt = avg7Segments(this.pts).flatten().toMap()
+        // [pts] may include the 7 days before [start], so the first averages are whole weeks
+        val all = avg7Segments(pts.filter { it.at <= end })
+        segs = if (range == Range.DAY) emptyList() else all.map { s -> s.filter { it.first >= start } }.filter { it.isNotEmpty() }
+        avgByAt = all.flatten().toMap()
         axis = axisFor(this.pts.map { it.centi / 100.0 }.ifEmpty { listOf(emptyCenti / 100.0) })
         xLabels = when (range) {
             Range.DAY -> listOf(0f to "00:00", 0.5f to "12:00", 1f to "now")
@@ -121,7 +123,7 @@ class TrendChartView(context: Context, attrs: AttributeSet? = null) : View(conte
                 v[i].second?.let { y -> paint.color = context.token(lineAttrs[s]); c.drawCircle(x, yOf(y), 5 * dp, paint) }
             } else {
                 paint.color = context.token(lineAttr)
-                c.drawCircle(x, yOf(avgByAt[pts[i].at] ?: (pts[i].centi / 100.0)), 5 * dp, paint)
+                c.drawCircle(x, yOf(if (range == Range.DAY) pts[i].centi / 100.0 else avgByAt[pts[i].at] ?: (pts[i].centi / 100.0)), 5 * dp, paint)
             }
         }
     }

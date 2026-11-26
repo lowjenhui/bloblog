@@ -2,6 +2,7 @@ package app.bloblog
 
 import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.util.TypedValue
 
 enum class AppTheme(val style: Int) {
@@ -17,8 +18,12 @@ object ThemePrefs {
     fun set(context: Context, theme: AppTheme) = prefs(context).edit().putString("theme", theme.name).apply()
 }
 
-/** Call before super.onCreate. */
-fun Activity.applyAppTheme() = setTheme(ThemePrefs.get(this).style)
+/** Call before super.onCreate. On Android 13+ it also tells the system which theme to start with next time, so Dark has no white flash. */
+fun Activity.applyAppTheme() {
+    val style = ThemePrefs.get(this).style
+    setTheme(style)
+    if (Build.VERSION.SDK_INT >= 33) splashScreen.setSplashScreenTheme(style)
+}
 
 fun Context.token(attr: Int): Int {
     val tv = TypedValue()

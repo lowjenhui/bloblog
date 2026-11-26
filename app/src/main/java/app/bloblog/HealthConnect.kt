@@ -8,6 +8,8 @@ import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.records.metadata.Device
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.Mass
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.time.ZoneId
 
@@ -51,7 +53,22 @@ object HealthConnect {
         }
     }
 
-    suspend fun syncPending(context: Context) {
-        Db(context).pendingForMe().forEach { write(context, it) }
+    /** Process-wide: every Health Connect write or remove, with the owner/written checks around it, runs under this lock. */
+    val lock = Mutex()
+
+    /** Writes the reading only if it is, right now, the owner's and unsent. The caller holds [lock]. */
+    suspend fun writeIfDue(context: Context, hc: HcPort, readingId: Long) {
+        val db = Db(context)
+        val r = db.reading(readingId) ?: return
+        if (r.personId != null && r.personId == db.me()?.id && !r.written) hc.write(r)
     }
+
+    suspend fun syncPending(context: Context, hc: HcPort = hcPort(context)) {
+        Db(context).pendingForMe().forEach { r -> lock.withLock { writeIfDue(context, hc, r.id) } }
+    }
+}
+
+fun hcPort(context: Context) = object : HcPort {
+    override suspend fun remove(readingId: Long) = HealthConnect.remove(context, readingId)
+    override suspend fun write(r: Reading) = HealthConnect.write(context, r)
 }

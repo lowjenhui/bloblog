@@ -128,4 +128,16 @@ class ModeTest {
         assertEquals(2, db().people().size)
         assertEquals(db().people().last().id, db().reading(id)!!.personId)
     }
+
+    @Test fun someoneElseLinkRevealsHiddenPerson() {
+        two(); ModePrefs.set(context, PeopleMode.SOLO)
+        val id = unassigned(5500)
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        RowActions(a) {}.openRowSheet(id)
+        text(ShadowDialog.getLatestDialog().window!!.decorView, "Someone else uses this scale? Add them")!!.performClick()
+        idle()
+        assertEquals(2, db().people().size)
+        assertEquals(PeopleMode.DUO, ModePrefs.get(context, db()))
+        assertEquals(db().people().last().id, db().reading(id)!!.personId)
+    }
 }

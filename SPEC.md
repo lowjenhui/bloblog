@@ -95,6 +95,7 @@ Top to bottom, scrolling as one page:
   - resting: `Today`, then `Julia is at 65.58 kg, down 0.45 kg.` (`up` / `down`; `no change` when |change| < 0.05)
   - sliding: the date (`Thu 19 Nov`), then `Julia was at 65.65 kg, down 0.38 kg.`
   - a person with no weigh-ins in the range: `Sam Lee has no weigh-ins in this range.` (no line drawn)
+  - a person with weigh-ins in the range but none in the 7 days ending on that day: `Sam Lee has no weigh-ins that week.`
 - No headline, no History.
 
 ### Settings (from ⚙)
@@ -129,7 +130,7 @@ The title is `Settings`. Two sections, **People** then **Appearance**.
 - `Move to`, then one row per person other than the current owner of the reading (avatar and name).
 - `🗑 Delete weigh-in` in plain `text`.
 - Moving follows rule 4. If Health Connect can't remove the record, the message `Couldn't update Health Connect. Try again.` shows and nothing changes.
-- In Just me, an unassigned weigh-in's sheet shows `This is me` (owner avatar), `🗑 Delete weigh-in`, then a link row `Someone else uses this scale? Add them`, which opens the Add person dialog. Saving it switches to Two people and runs the backfill.
+- In Just me, an unassigned weigh-in's sheet shows `This is me` (owner avatar), `🗑 Delete weigh-in`, then a link row `Someone else uses this scale? Add them`, which opens the Add person dialog. Saving it switches to Two people and runs the backfill. If a hidden second person already exists, the link switches to Two people and runs the backfill without the dialog.
 
 ### Delete confirmation
 
@@ -157,7 +158,7 @@ A single non-cancelable dialog for the phone owner, with the wave sticker, follo
 
 - **Ranges** are rolling windows ending now: Day = today since midnight; Week = 7 days; Month = 30 days; 3M = 90 days; Year = 365 days.
 - **Dots:** every assigned weigh-in of the person in the range.
-- **7-day average line** (all ranges except Day): at each weigh-in time `t`, the mean of that person's weigh-ins in `(t − 7 days, t]`. The line breaks where two consecutive weigh-ins are more than 7 days apart. On Year, dots are drawn smaller (r 2).
+- **7-day average line** (all ranges except Day): at each weigh-in time `t`, the mean of that person's weigh-ins in `(t − 7 days, t]`. The averages use weigh-ins from the 7 days before the range start, but only points inside the range are drawn. The line breaks where two consecutive weigh-ins are more than 7 days apart. On Year, dots are drawn smaller (r 2).
 - **Y axis:** `lo` = the half-kilo at or below (min − 0.3); `step` = the smallest half-kilo ≥ ((max + 0.3) − lo) / 2, at least 0.5; gridlines at lo, lo + step and lo + 2·step, labelled with one decimal, with ` kg` on the top label only. Compare uses the same rule on the changes (all values and 0), with `+`/`−` signs.
 - **X axis:** Day, Week, Month and 3M get three labels (start, middle, end). Day: `00:00`, `12:00`, `now`. Week, Month, 3M: dates like `27 Oct`. Year gets five month labels, one per quarter plus the end.
 - **Press and slide:** the readout snaps to the nearest weigh-in by time (person view) or the nearest day (Compare), with a dashed vertical guide and a ring on the line. The page doesn't scroll while sliding.
@@ -197,3 +198,4 @@ A single non-cancelable dialog for the phone owner, with the wave sticker, follo
 6. **Two scales or a neighbour's scale:** the filter on the scale ID ignores other scales. Re-pairing is only possible from Settings.
 7. **Bluetooth toggled off and on:** the background scan may stop until Blob-log is reopened or the phone restarts. This is untested.
 8. **Android 12+ only** (minSdk 31). Is the owner's phone on Android 12 or later?
+9. **Cold-start flash (Dark):** on Android 13+ the system remembers the chosen theme for the starting window. On Android 12 (API 31–32) a Dark user sees a white starting window for a moment on a cold start.

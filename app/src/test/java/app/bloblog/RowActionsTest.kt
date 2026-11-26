@@ -3,7 +3,9 @@ package app.bloblog
 import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -18,8 +20,10 @@ import org.robolectric.annotation.Config
 
 private class FakeHc(var removeOk: Boolean = true) : HcPort {
     val calls = mutableListOf<String>()
+    val written = mutableListOf<Long>()
+    var gate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
     override suspend fun remove(readingId: Long): Boolean { calls += "remove"; return removeOk }
-    override suspend fun write(r: Reading) { calls += "write" }
+    override suspend fun write(r: Reading) { gate?.also { gate = null }?.await(); calls += "write"; written += r.id }
 }
 
 @RunWith(RobolectricTestRunner::class)
@@ -37,8 +41,8 @@ class RowActionsTest {
         actions = RowActions(a, fake) { changed++ }
     }
 
-    private fun add(personId: Long?, written: Boolean): Long = Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
-        put("taken_at", 1_700_000_000_000L); put("weight_centi", 6570); put("scale_id", "s"); put("raw_hex", "")
+    private fun add(personId: Long?, written: Boolean, at: Long = 1_700_000_000_000L): Long = Db(context).writableDatabase.insert("reading", null, ContentValues().apply {
+        put("taken_at", at); put("weight_centi", 6570); put("scale_id", "s"); put("raw_hex", "")
         put("person_id", personId); put("hc_written", if (written) 1 else 0)
     })
 
@@ -95,5 +99,18 @@ class RowActionsTest {
         actions.showSaved("Julia", 6570)
         actions.showMatched(6, "Sam Lee")
         assertNotNull(org.robolectric.shadows.ShadowDialog.getLatestDialog())
+    }
+
+    @Test fun readingMovedAwayIsNotWrittenBySyncPending() = runBlocking {
+        val a = add(julia, false, 1_700_000_002_000L); val b = add(julia, false, 1_700_000_001_000L)
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>(); fake.gate = gate
+        val sync = launch { HealthConnect.syncPending(context, fake) }
+        yield() // sync is now inside the write of the newest reading
+        val move = launch { actions.moveReading(b, jing) }
+        yield()
+        gate.complete(Unit)
+        sync.join(); move.join()
+        assertEquals(listOf(a), fake.written)
+        assertEquals(jing, Db(context).reading(b)!!.personId)
     }
 }

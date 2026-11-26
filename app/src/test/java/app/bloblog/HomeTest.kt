@@ -163,4 +163,10 @@ class HomeTest {
         val d = db(); add(d.me()!!.id, now - hour, 6500)
         assertTrue(listTexts(compare()).contains("Today\nJulia is at 65.00 kg, no change.\nSam Lee has no weigh-ins in this range."))
     }
+
+    @Test fun compareNoWeighInsThatWeek() {
+        val d = db(); val me = d.me()!!.id; val second = d.people()[1].id
+        add(me, now - hour, 6500); add(second, now - 20 * day, 5500)
+        assertTrue(listTexts(compare()).contains("Today\nJulia is at 65.00 kg, no change.\nSam Lee has no weigh-ins that week."))
+    }
 }

@@ -21,7 +21,7 @@ class SettingsActivity : ComponentActivity() {
         applyAppTheme()
         super.onCreate(savedInstanceState)
         col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16)) }
-        setContentView(ScrollView(this).apply { addView(col) })
+        setContentView(ScrollView(this).apply { fitsSystemWindows = true; addView(col) })
         render()
     }
 
@@ -30,7 +30,7 @@ class SettingsActivity : ComponentActivity() {
         val db = Db(this)
         val mode = ModePrefs.get(this, db)
         val people = db.activePeople(mode)
-        col.addView(text("Settings", 24f, R.attr.bl_text, bold = true))
+        col.addView(text("Settings", 16f, R.attr.bl_text, bold = true))
 
         col.addView(text("People", 16f, R.attr.bl_text, bold = true), lp(top = 24))
         val intro = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -117,7 +117,7 @@ class SettingsActivity : ComponentActivity() {
             row.addView(View(this).apply {
                 background = android.graphics.drawable.GradientDrawable().apply {
                     shape = android.graphics.drawable.GradientDrawable.OVAL
-                    setColor(themed.token(attr)); setStroke(dp(1), 0xFF8A8599.toInt())
+                    setColor(themed.token(attr)); setStroke(dp(1), themed.token(R.attr.bl_divider))
                 }
             }, LinearLayout.LayoutParams(dp(16), dp(16)).apply { marginStart = dp(4) })
         }

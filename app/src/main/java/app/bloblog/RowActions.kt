@@ -12,6 +12,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -22,15 +23,10 @@ interface HcPort {
     suspend fun write(r: Reading)
 }
 
-private fun healthConnect(a: ComponentActivity) = object : HcPort {
-    override suspend fun remove(readingId: Long) = HealthConnect.remove(a, readingId)
-    override suspend fun write(r: Reading) = HealthConnect.write(a, r)
-}
-
 /** Row sheet, delete confirmation and toasts (spec §5.4 to §5.6). [onChanged] runs after a move or delete so Home can refresh. */
 class RowActions(
     private val a: ComponentActivity,
-    private val hc: HcPort = healthConnect(a),
+    private val hc: HcPort = hcPort(a),
     private val onChanged: () -> Unit,
 ) {
     private val whenFmt = SimpleDateFormat("EEE d MMM · HH:mm", Locale.ENGLISH)
@@ -42,7 +38,7 @@ class RowActions(
         val people = db.people()
         val owner = people.firstOrNull { it.id == r.personId }
         val sheet = BottomSheetDialog(a)
-        val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(16), a.dp(12), a.dp(16), a.dp(16)) }
+        val col = LinearLayout(a).apply { orientation = LinearLayout.VERTICAL; setPadding(a.dp(16), a.dp(12), a.dp(16), a.dp(24)) }
 
         col.addView(View(a).apply { fill(R.attr.bl_divider, 2) }, LinearLayout.LayoutParams(a.dp(32), a.dp(4)).apply { gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = a.dp(12) })
         val head = LinearLayout(a).apply { gravity = Gravity.CENTER_VERTICAL }
@@ -76,7 +72,17 @@ class RowActions(
         }, LinearLayout.LayoutParams(-1, a.dp(48)).apply { topMargin = a.dp(12) })
         if (solo && r.personId == null) col.addView(label("Someone else uses this scale? Add them", 14f, R.attr.bl_textMuted).apply {
             gravity = Gravity.CENTER_VERTICAL
-            setOnClickListener { sheet.dismiss(); a.personDialog(null) { n, matched -> if (matched > 0) showMatched(matched, n); onChanged() } }
+            setOnClickListener {
+                sheet.dismiss()
+                val hidden = db.people().firstOrNull { !it.isMe }
+                if (hidden == null) a.personDialog(null) { n, matched -> if (matched > 0) showMatched(matched, n); onChanged() }
+                else { // a hidden second person comes back with their data (spec §5.8)
+                    ModePrefs.set(a, PeopleMode.DUO)
+                    val n = db.backfill(hidden.id)
+                    if (n > 0) showMatched(n, hidden.name)
+                    onChanged()
+                }
+            }
         }, LinearLayout.LayoutParams(-1, a.dp(48)))
         sheet.setContentView(col)
         sheet.show()
@@ -97,23 +103,23 @@ class RowActions(
         }
     }
 
-    suspend fun moveReading(readingId: Long, toPersonId: Long): Boolean {
+    suspend fun moveReading(readingId: Long, toPersonId: Long): Boolean = HealthConnect.lock.withLock {
         val db = Db(a)
-        val r = db.reading(readingId) ?: return false
-        val to = db.people().firstOrNull { it.id == toPersonId } ?: return false
+        if (db.reading(readingId) == null) return@withLock false
+        val to = db.people().firstOrNull { it.id == toPersonId } ?: return@withLock false
         val wasWritten = db.isWritten(readingId)
-        if (wasWritten && !to.isMe && !hc.remove(readingId)) return hcFailed()
+        if (wasWritten && !to.isMe && !hc.remove(readingId)) return@withLock hcFailed()
         db.setPerson(readingId, toPersonId)
-        if (to.isMe && !wasWritten) hc.write(r)
-        return done(readingId)
+        if (to.isMe) HealthConnect.writeIfDue(a, hc, readingId)
+        done(readingId)
     }
 
-    suspend fun deleteReading(readingId: Long): Boolean {
+    suspend fun deleteReading(readingId: Long): Boolean = HealthConnect.lock.withLock {
         val db = Db(a)
-        if (db.reading(readingId) == null) return false
-        if (db.isWritten(readingId) && !hc.remove(readingId)) return hcFailed()
+        if (db.reading(readingId) == null) return@withLock false
+        if (db.isWritten(readingId) && !hc.remove(readingId)) return@withLock hcFailed()
         db.delete(readingId)
-        return done(readingId)
+        done(readingId)
     }
 
     fun showSaved(name: String, centi: Int) = toast("Saved ${kg(centi)} for $name")
@@ -130,12 +136,12 @@ class RowActions(
     private fun toast(msg: String, sticker: Boolean = true) {
         val bar = Snackbar.make(a.findViewById(android.R.id.content), msg, 3000)
         bar.view.background = GradientDrawable().apply {
-            setColor(a.token(R.attr.bl_toast)); setStroke(a.dp(1), a.token(R.attr.bl_toastStroke)); cornerRadius = a.dp(12).toFloat()
+            setColor(a.token(R.attr.bl_toast)); setStroke(a.dp(1), a.token(R.attr.bl_toastStroke)); cornerRadius = a.dp(16).toFloat()
         }
         bar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text).apply {
             setTextColor(a.token(R.attr.bl_onToast))
             if (sticker) {
-                val d = a.getDrawable(R.drawable.blob_scale)!!.also { it.setBounds(0, 0, a.dp(24), a.dp(24)) }
+                val d = a.getDrawable(R.drawable.blob_scale)!!.also { it.setBounds(0, 0, a.dp(36), a.dp(36)) }
                 setCompoundDrawablesRelative(d, null, null, null)
                 compoundDrawablePadding = a.dp(8)
             }

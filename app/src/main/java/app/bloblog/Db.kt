@@ -11,6 +11,8 @@ data class Reading(val id: Long, val takenAt: Long, val weightCentiKg: Int, val 
 data class Person(val id: Long, val name: String, val isMe: Boolean, val order: Int)
 
 class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "bloblog.db", null, 2) {
+    private val app = context.applicationContext
+
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             "CREATE TABLE reading (id INTEGER PRIMARY KEY, taken_at INTEGER NOT NULL, " +
@@ -108,7 +110,7 @@ class Db(context: Context) : SQLiteOpenHelper(context.applicationContext, "blobl
     fun backfill(newPersonId: Long): Int {
         var n = 0
         for (r in readings("WHERE person_id IS NULL").reversed()) {
-            if (assign(r.weightCentiKg, refs(r.takenAt, PeopleMode.DUO)) == newPersonId) { setPerson(r.id, newPersonId); n++ }
+            if (assign(r.weightCentiKg, refs(r.takenAt, PeopleMode.DUO)) == newPersonId) { setPerson(r.id, newPersonId); Notifications.cancel(app, r.id); n++ }
         }
         return n
     }
