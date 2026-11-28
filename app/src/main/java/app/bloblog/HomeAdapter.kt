@@ -158,7 +158,9 @@ class HomeAdapter(
                     setImageResource(if (day) R.drawable.blob_run else R.drawable.blob_search)
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 }, LinearLayout.LayoutParams(c.dp(48), c.dp(48)))
-                addView(text(c, if (day) "No weigh-in yet today" else "No weigh-ins in this range", 12f, R.attr.bl_textMuted))
+                // Own width: the default (match parent) squeezed it to the 48 dp sticker, one word per line.
+                addView(text(c, if (day) "No weigh-in yet today" else "No weigh-ins in this range", 12f, R.attr.bl_textMuted),
+                    LinearLayout.LayoutParams(-2, -2))
             }, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
         }
         addView(frame, LinearLayout.LayoutParams(-1, c.dp(220)).apply { topMargin = c.dp(4); marginStart = c.dp(12); marginEnd = c.dp(12) })
